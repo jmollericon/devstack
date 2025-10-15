@@ -83,14 +83,10 @@ restart_services() {
         done < "$projects_file"
     fi
 
-    # Force stop and remove all containers to prevent conflicts
+    # Stop all services using docker-compose (this will handle everything properly)
     cd "$SCRIPT_DIR"
     echo -e "${BLUE}Stopping all services...${NC}"
     docker-compose down
-
-    # Remove any conflicting containers that might still exist
-    echo -e "${BLUE}Cleaning up containers...${NC}"
-    docker rm -f apache-php7.4 apache-php8.2 mysql5.7.44 phpmyadmin >/dev/null 2>&1
 
     # Clear the projects file temporarily to avoid conflicts during mount
     > "$projects_file"
@@ -267,53 +263,51 @@ mount_project() {
 
 restart_container_with_project() {
     local php_version="$1"
-    local container_name
     local projects_file="$SCRIPT_DIR/.devstack_projects"
+    local service_name="$php_version"
 
+    echo -e "${BLUE}Restarting $service_name service with mounted projects...${NC}"
+
+    # Stop the specific service
+    cd "$SCRIPT_DIR"
+    docker-compose stop "$service_name"
+    docker-compose rm -f "$service_name"
+
+    # Create a temporary docker-compose override for this service with additional volumes
+    local override_file="docker-compose.override.tmp.yml"
+    cat > "$override_file" << EOF
+services:
+  $service_name:
+    volumes:
+      - ./www/$php_version:/var/www/html
+EOF
+
+    # Add project volumes from tracking file
+    if [ -f "$projects_file" ]; then
+        while IFS=':' read -r version link_name source_path; do
+            if [ "$version" = "$php_version" ]; then
+                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
+            fi
+        done < "$projects_file"
+    fi
+
+    # Start the service with the override
+    docker-compose -f docker-compose.yml -f "$override_file" up -d "$service_name"
+
+    # Clean up the temporary override file
+    rm -f "$override_file"
+
+    # Wait for container to be ready
+    sleep 3
+
+    # Check if container is running
+    local container_name
     if [ "$php_version" = "php74" ]; then
         container_name="${PHP74_CONTAINER_NAME}"
     else
         container_name="${PHP82_CONTAINER_NAME}"
     fi
 
-    echo -e "${BLUE}Restarting $container_name with mounted projects...${NC}"
-
-    # Stop the container
-    docker stop "$container_name" >/dev/null 2>&1
-    docker rm "$container_name" >/dev/null 2>&1
-
-    # Build docker run command with all project mounts
-    local docker_cmd="docker run -d --name $container_name"
-    docker_cmd="$docker_cmd --network ${NETWORK_NAME}"
-
-    # Add main www directory mount
-    docker_cmd="$docker_cmd -v $SCRIPT_DIR/www/$php_version:/var/www/html"
-
-    # Add project mounts from tracking file
-    if [ -f "$projects_file" ]; then
-        while IFS=':' read -r version link_name source_path; do
-            if [ "$version" = "$php_version" ]; then
-                docker_cmd="$docker_cmd -v $source_path:/var/www/html/$link_name"
-            fi
-        done < "$projects_file"
-    fi
-
-    # Add port mapping
-    if [ "$php_version" = "php74" ]; then
-        docker_cmd="$docker_cmd -p ${PHP_74_PORT}:80"
-        docker_cmd="$docker_cmd devstack-php74:latest"
-    else
-        docker_cmd="$docker_cmd -p ${PHP_82_PORT}:80"
-        docker_cmd="$docker_cmd devstack-php82:latest"
-    fi
-
-    # Execute the docker run command
-    eval "$docker_cmd" >/dev/null 2>&1
-
-    # Wait for container to be ready
-    sleep 3
-
-    # Check if container is running
     if docker ps | grep -q "$container_name"; then
         return 0
     else
