@@ -1,212 +1,214 @@
 # DevStack - Development Environment
 
-Un stack de desarrollo completo con PHP 7.4, PHP 8.2, MySQL 5.7 y phpMyAdmin usando Docker Compose.
+A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin using Docker Compose.
 
-## 🚀 Características
+## 🚀 Features
 
-- **PHP 7.4** con Apache, Xdebug 3.1.6, Redis, ImageMagick
-- **PHP 8.2** con Apache, Xdebug 3.3.2, Redis, ImageMagick
-- **MySQL 5.7.44** con persistencia de datos
-- **phpMyAdmin** para administración de base de datos
-- **Configuración optimizada** para desarrollo
-- **Variables de entorno** para fácil personalización
-- **Script de gestión** para comandos comunes
+- **PHP 7.4** with Apache, Xdebug 3.1.6, Redis, ImageMagick
+- **PHP 8.2** with Apache, Xdebug 3.3.2, Redis, ImageMagick
+- **MySQL 5.7.44** with data persistence
+- **phpMyAdmin** for database administration
+- **Optimized configuration** for development
+- **Environment variables** for easy customization
+- **Management script** for common commands
 
-## 📋 Requisitos
+## 📋 Requirements
 
 - Docker Desktop
 - Docker Compose v2+
 
-## ⚡ Inicio Rápido
+## ⚡ Quick Start
 
-1. **Clonar y configurar:**
+1. **Clone and configure:**
 
    ```bash
    cd devstack
    cp .env.example .env
-   # Editar .env con tus configuraciones
+   # Edit .env with your configurations
    ```
 
-   > **💡 Obtener la ruta completa:** Ejecuta `pwd` dentro del directorio devstack para obtener la ruta completa que necesitarás para configurar el alias.
+   > **💡 Get the full path:** Run `pwd` inside the devstack directory to get the full path you'll need to configure the alias.
 
-2. **Iniciar el stack:**
+2. **Start the stack:**
 
    ```bash
    ./devstack.sh start
    ```
 
-3. **Acceder a los servicios:**
+3. **Access the services:**
 
    - PHP 7.4: http://localhost:8074
    - PHP 8.2: http://localhost:8082
    - phpMyAdmin: http://localhost:8080
 
-4. **Configurar alias global (opcional pero recomendado):**
+4. **Configure global alias (optional but recommended):**
 
    ```bash
-   # Para zsh (macOS) - Reemplaza <RUTA_AL_DEVSTACK> con tu ruta real
-   echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.zshrc
+   # For zsh (macOS) - Replace <DEVSTACK_PATH> with your real path
+   echo 'alias devstack="<DEVSTACK_PATH>/devstack.sh"' >> ~/.zshrc
    source ~/.zshrc
 
-   # Ejemplo: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.zshrc
+   # Example: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.zshrc
 
-   # Luego usar desde cualquier directorio:
+   # Then use from any directory:
    devstack start
    devstack info
    ```
 
-## 🛠️ Comandos Disponibles
+## 🛠️ Available Commands
 
-### Script de gestión (`./devstack.sh`)
+### Management script (`./devstack.sh`)
 
 ```bash
-./devstack.sh start       # Iniciar todos los servicios
-./devstack.sh stop        # Detener todos los servicios
-./devstack.sh restart     # Reiniciar todos los servicios
-./devstack.sh build       # Reconstruir e iniciar servicios
-./devstack.sh logs        # Ver logs de todos los servicios
-./devstack.sh status      # Ver estado de los servicios
-./devstack.sh clean       # Limpiar todo (DESTRUCTIVO)
-./devstack.sh php74       # Acceder al contenedor PHP 7.4
-./devstack.sh php82       # Acceder al contenedor PHP 8.2
-./devstack.sh mysql       # Acceder a MySQL shell
-./devstack.sh info        # Mostrar información de servicios
+./devstack.sh start       # Start all services
+./devstack.sh stop        # Stop all services
+./devstack.sh restart     # Restart all services
+./devstack.sh build       # Rebuild and start services
+./devstack.sh logs        # View logs from all services
+./devstack.sh status      # Show status of services
+./devstack.sh clean       # Clean everything (DESTRUCTIVE)
+./devstack.sh php74       # Access PHP 7.4 container
+./devstack.sh php82       # Access PHP 8.2 container
+./devstack.sh mysql       # Access MySQL shell
+./devstack.sh info        # Show service information
 ```
 
-### Configurar Alias Global (Recomendado)
+### Configure Global Alias (Recommended)
 
-Para usar `devstack` desde cualquier directorio sin necesidad de `./` y sin estar en el directorio del proyecto:
+To use `devstack` from any directory without needing `./` and without being in the project directory:
 
-#### 🔍 Primer paso: Obtener la ruta completa
+#### 🔍 First step: Get the full path
 
 ```bash
-# Navegar al directorio de DevStack y obtener la ruta completa
+# Navigate to DevStack directory and get the full path
 cd devstack
 pwd
-# Ejemplo de salida: /Users/tu-usuario/Projects/devstack
-# Copia esta ruta para usar en los siguientes pasos
+# Example output: /Users/your-user/Projects/devstack
+# Copy this path to use in the following steps
 ```
 
-#### Para zsh (macOS por defecto):
+#### For zsh (macOS default):
 
 ```bash
-# Agregar al final de ~/.zshrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
-echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.zshrc
+# Add to the end of ~/.zshrc - Change <DEVSTACK_PATH> to your real path
+echo 'alias devstack="<DEVSTACK_PATH>/devstack.sh"' >> ~/.zshrc
 source ~/.zshrc
 
-# Ejemplos de rutas comunes:
+# Common path examples:
 # echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.zshrc
 # echo 'alias devstack="$HOME/Projects/devstack/devstack.sh"' >> ~/.zshrc
 ```
 
-#### Para bash:
+#### For bash:
 
 ```bash
-# Agregar al final de ~/.bashrc o ~/.bash_profile
-echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.bashrc
+# Add to the end of ~/.bashrc or ~/.bash_profile
+echo 'alias devstack="<DEVSTACK_PATH>/devstack.sh"' >> ~/.bashrc
 source ~/.bashrc
 
-# Ejemplo: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.bashrc
+# Example: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.bashrc
 ```
 
-#### Uso después de configurar el alias:
+#### Usage after configuring the alias:
 
 ```bash
-devstack start           # Desde cualquier directorio
-devstack stop            # Sin necesidad de ./
-devstack php74           # Acceso directo
-devstack info            # Información rápida
+devstack start           # From any directory
+devstack stop            # No need for ./
+devstack php74           # Direct access
+devstack info            # Quick information
 ```
 
-### Docker Compose tradicional
+### Traditional Docker Compose
 
 ```bash
-docker-compose up -d      # Iniciar servicios
-docker-compose down       # Detener servicios
-docker-compose logs -f    # Ver logs en tiempo real
-docker-compose ps         # Ver estado de contenedores
+docker-compose up -d      # Start services
+docker-compose down       # Stop services
+docker-compose logs -f    # View logs in real time
+docker-compose ps         # View container status
 ```
 
-## 🔧 Configuración
+## 🔧 Configuration
 
-### Variables de entorno (`.env`)
+### Environment variables (`.env`)
 
-| Variable                 | Descripción               | Valor por defecto |
-| ------------------------ | ------------------------- | ----------------- |
-| `MYSQL_57_PORT`          | Puerto de MySQL 5.7       | `3306`            |
-| `PHP_74_PORT`            | Puerto de PHP 7.4         | `8074`            |
-| `PHP_82_PORT`            | Puerto de PHP 8.2         | `8082`            |
-| `PHPMYADMIN_PORT`        | Puerto de phpMyAdmin      | `8080`            |
-| `MYSQL_57_ROOT_PASSWORD` | Contraseña root de MySQL  | `root`            |
-| `MYSQL_57_DATABASE`      | Base de datos por defecto | `devstack`        |
-| `MYSQL_57_USER`          | Usuario de MySQL          | `devstack`        |
-| `MYSQL_57_PASSWORD`      | Contraseña de usuario     | `root`            |
+| Variable                 | Description         | Default value |
+| ------------------------ | ------------------- | ------------- |
+| `MYSQL_57_PORT`          | MySQL 5.7 port      | `3306`        |
+| `PHP_74_PORT`            | PHP 7.4 port        | `8074`        |
+| `PHP_82_PORT`            | PHP 8.2 port        | `8082`        |
+| `PHPMYADMIN_PORT`        | phpMyAdmin port     | `8080`        |
+| `MYSQL_57_ROOT_PASSWORD` | MySQL root password | `root`        |
+| `MYSQL_57_DATABASE`      | Default database    | `devstack`    |
+| `MYSQL_57_USER`          | MySQL user          | `devstack`    |
+| `MYSQL_57_PASSWORD`      | User password       | `root`        |
 
-### Configuración Avanzada del Alias
+### Advanced Alias Configuration
 
-Para una experiencia aún más fluida, puedes crear una función que cambie automáticamente al directorio del proyecto:
+For an even smoother experience, you can create a function that automatically changes to the project directory:
 
-#### Función avanzada para zsh:
+#### Advanced function for zsh:
 
 ```bash
-# Agregar al final de ~/.zshrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+# Add to the end of ~/.zshrc - Change <DEVSTACK_PATH> to your real path
 function devstack() {
-    local DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+    local DEVSTACK_DIR="<DEVSTACK_PATH>"
     local CURRENT_DIR=$(pwd)
 
     cd "$DEVSTACK_DIR"
     ./devstack.sh "$@"
     local EXIT_CODE=$?
 
-    # Regresar al directorio original
+    # Return to original directory
     cd "$CURRENT_DIR"
     return $EXIT_CODE
 }
 
-# Ejemplo: local DEVSTACK_DIR="$HOME/devstack"
+# Example: local DEVSTACK_DIR="$HOME/devstack"
 ```
 
-#### Función avanzada para bash:
+#### Advanced function for bash:
 
 ```bash
-# Agregar al final de ~/.bashrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+# Add to the end of ~/.bashrc - Change <DEVSTACK_PATH> to your real path
 devstack() {
-    local DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+    local DEVSTACK_DIR="<DEVSTACK_PATH>"
     local CURRENT_DIR=$(pwd)
 
     cd "$DEVSTACK_DIR"
     ./devstack.sh "$@"
     local EXIT_CODE=$?
 
-    # Regresar al directorio original
+    # Return to original directory
     cd "$CURRENT_DIR"
     return $EXIT_CODE
 }
 
-# Ejemplo: local DEVSTACK_DIR="$HOME/devstack"
+# Example: local DEVSTACK_DIR="$HOME/devstack"
 ```
 
-#### Alias simple (recomendado para la mayoría de usuarios):
+#### Simple alias (recommended for most users):
 
 ```bash
-# Para zsh (agregar a ~/.zshrc)
-alias devstack="cd <RUTA_AL_DEVSTACK> && ./devstack.sh"
+# For zsh (add to ~/.zshrc)
+alias devstack="cd <DEVSTACK_PATH> && ./devstack.sh"
 
-# Para bash (agregar a ~/.bashrc)
-alias devstack="cd <RUTA_AL_DEVSTACK> && ./devstack.sh"
+# For bash (add to ~/.bashrc)
+alias devstack="cd <DEVSTACK_PATH> && ./devstack.sh"
 
-# Ejemplos:
+# Examples:
 # alias devstack="cd $HOME/devstack && ./devstack.sh"
 # alias devstack="cd $HOME/Projects/devstack && ./devstack.sh"
 ```
 
-> **Nota:** Reemplaza `<RUTA_AL_DEVSTACK>` con la ruta real donde tienes instalado DevStack en tu sistema. Puedes usar variables como `$HOME` para hacer la configuración más portable.## 🐛 Debugging con Xdebug
+> **Note:** Replace `<DEVSTACK_PATH>` with the real path where you have DevStack installed on your system. You can use variables like `$HOME` to make the configuration more portable.
 
-### Configuración para VS Code
+## 🐛 Debugging with Xdebug
 
-1. **Instalar extensión PHP Debug**
+### Configuration for VS Code
 
-2. **Configurar `.vscode/launch.json`:**
+1. **Install PHP Debug extension**
+
+2. **Configure `.vscode/launch.json`:**
 
    ```json
    {
@@ -234,132 +236,132 @@ alias devstack="cd <RUTA_AL_DEVSTACK> && ./devstack.sh"
    }
    ```
 
-3. **Iniciar debugging en VS Code y establecer breakpoints**
+3. **Start debugging in VS Code and set breakpoints**
 
-## 📦 Estructura del Proyecto
+## 📦 Project Structure
 
 ```
 devstack/
-├── docker-compose.yml      # Configuración principal
-├── .env                    # Variables de entorno
-├── .env.example           # Plantilla de variables
-├── devstack.sh            # Script de gestión
+├── docker-compose.yml      # Main configuration
+├── .env                    # Environment variables
+├── .env.example           # Variable template
+├── devstack.sh            # Management script
 ├── www/
 │   ├── php74/
-│   │   ├── Dockerfile     # Imagen PHP 7.4
-│   │   ├── php.ini        # Configuración PHP 7.4
+│   │   ├── Dockerfile     # PHP 7.4 image
+│   │   ├── php.ini        # PHP 7.4 configuration
 │   │   └── .dockerignore
 │   └── php82/
-│       ├── Dockerfile     # Imagen PHP 8.2
-│       ├── php.ini        # Configuración PHP 8.2
+│       ├── Dockerfile     # PHP 8.2 image
+│       ├── php.ini        # PHP 8.2 configuration
 │       └── .dockerignore
 └── mysql/
-    └── 5.7.44/           # Datos persistentes de MySQL
+    └── 5.7.44/           # MySQL persistent data
 ```
 
-## 🔍 Información de los Contenedores
+## 🔍 Container Information
 
 ### PHP 7.4 (`apache-php7.4`)
 
 - **Base:** php:7.4-apache
-- **Extensiones:** PDO, MySQLi, GD, Zip, Intl, Mbstring, Xdebug 3.1.6, Redis 5.3.7, ImageMagick
-- **Puerto:** 8074
-- **Documentos:** `/var/www/html`
+- **Extensions:** PDO, MySQLi, GD, Zip, Intl, Mbstring, Xdebug 3.1.6, Redis 5.3.7, ImageMagick
+- **Port:** 8074
+- **Document root:** `/var/www/html`
 
 ### PHP 8.2 (`apache-php8.2`)
 
 - **Base:** php:8.2-apache
-- **Extensiones:** PDO, MySQLi, GD, Zip, Intl, Mbstring, Xdebug 3.3.2, Redis 6.0.2, ImageMagick
-- **Puerto:** 8082
-- **Documentos:** `/var/www/html`
+- **Extensions:** PDO, MySQLi, GD, Zip, Intl, Mbstring, Xdebug 3.3.2, Redis 6.0.2, ImageMagick
+- **Port:** 8082
+- **Document root:** `/var/www/html`
 
 ### MySQL 5.7.44 (`mysql5.7.44`)
 
-- **Usuario:** devstack / root
-- **Contraseña:** root / root
-- **Base de datos:** devstack
-- **Puerto:** 3306
+- **User:** devstack / root
+- **Password:** root / root
+- **Database:** devstack
+- **Port:** 3306
 
 ### phpMyAdmin (`phpmyadmin`)
 
-- **Acceso:** http://localhost:8080
-- **Usuario:** devstack o root
-- **Contraseña:** root
+- **Access:** http://localhost:8080
+- **User:** devstack or root
+- **Password:** root
 
-## 🚨 Solución de Problemas
+## 🚨 Troubleshooting
 
-### Error de puertos ocupados
+### Occupied ports error
 
 ```bash
-# Cambiar puertos en .env
+# Change ports in .env
 PHP_74_PORT=9074
 PHP_82_PORT=9082
 PHPMYADMIN_PORT=9080
 MYSQL_57_PORT=3307
 ```
 
-### Permisos de archivos
+### File permissions
 
 ```bash
-# Ajustar permisos si es necesario
+# Adjust permissions if necessary
 sudo chown -R $USER:$USER ./mysql/
 ```
 
-### Limpiar todo y empezar de nuevo
+### Clean everything and start fresh
 
 ```bash
 ./devstack.sh clean
 ./devstack.sh build
 ```
 
-### Ver logs específicos
+### View specific logs
 
 ```bash
-docker-compose logs database    # Solo MySQL
-docker-compose logs php74       # Solo PHP 7.4
-docker-compose logs php82       # Solo PHP 8.2
+docker-compose logs database    # MySQL only
+docker-compose logs php74       # PHP 7.4 only
+docker-compose logs php82       # PHP 8.2 only
 ```
 
-## � Tips y Trucos
+## 💡 Tips and Tricks
 
-### Comandos útiles con alias configurado
+### Useful commands with configured alias
 
 ```bash
-# Verificar estado rápidamente
+# Check status quickly
 devstack status
 
-# Ver información de servicios
+# View service information
 devstack info
 
-# Acceso rápido a contenedores
-devstack php82    # Entrar a PHP 8.2
-devstack mysql    # Acceso directo a MySQL
+# Quick access to containers
+devstack php82    # Enter PHP 8.2
+devstack mysql    # Direct MySQL access
 
-# Logs en tiempo real
+# Real-time logs
 devstack logs
 ```
 
-### Autocompletado para el alias (opcional)
+### Autocompletion for the alias (optional)
 
-Para habilitar autocompletado en zsh:
+To enable autocompletion in zsh:
 
 ```bash
-# Agregar a ~/.zshrc
+# Add to ~/.zshrc
 _devstack_completion() {
     local -a commands
     commands=(
-        'start:Iniciar todos los servicios'
-        'stop:Detener todos los servicios'
-        'restart:Reiniciar todos los servicios'
-        'build:Reconstruir e iniciar servicios'
-        'logs:Ver logs de todos los servicios'
-        'status:Ver estado de los servicios'
-        'clean:Limpiar todo (DESTRUCTIVO)'
-        'php74:Acceder al contenedor PHP 7.4'
-        'php82:Acceder al contenedor PHP 8.2'
-        'mysql:Acceder a MySQL shell'
-        'info:Mostrar información de servicios'
-        'help:Mostrar ayuda'
+        'start:Start all services'
+        'stop:Stop all services'
+        'restart:Restart all services'
+        'build:Rebuild and start services'
+        'logs:View logs from all services'
+        'status:Show status of services'
+        'clean:Clean everything (DESTRUCTIVE)'
+        'php74:Access PHP 7.4 container'
+        'php82:Access PHP 8.2 container'
+        'mysql:Access MySQL shell'
+        'info:Show service information'
+        'help:Show help'
     )
     _describe 'commands' commands
 }
@@ -367,29 +369,89 @@ _devstack_completion() {
 compdef _devstack_completion devstack
 ```
 
-### Variables de entorno útiles
+### Useful environment variables
 
 ```bash
-# Exportar para uso en otros scripts - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
-export DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+# Export for use in other scripts - Change <DEVSTACK_PATH> to your real path
+export DEVSTACK_DIR="<DEVSTACK_PATH>"
 export DEVSTACK_PHP74_PORT="8074"
 export DEVSTACK_PHP82_PORT="8082"
 
-# Ejemplos:
+# Examples:
 # export DEVSTACK_DIR="$HOME/devstack"
 # export DEVSTACK_DIR="$HOME/Projects/devstack"
 ```
 
-## �📄 Licencia
+## 💡 Tips and Tricks
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
+### Useful commands with configured alias
 
-## 🤝 Contribuciones
+```bash
+# Check status quickly
+devstack status
 
-Las contribuciones son bienvenidas. Por favor:
+# View service information
+devstack info
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+# Quick access to containers
+devstack php82    # Enter PHP 8.2
+devstack mysql    # Direct MySQL access
+
+# Real-time logs
+devstack logs
+```
+
+### Autocompletado para el alias (opcional)
+
+To enable autocompletion in zsh:
+
+```bash
+# Add to ~/.zshrc
+_devstack_completion() {
+    local -a commands
+    commands=(
+        'start:Start all services'
+        'stop:Stop all services'
+        'restart:Restart all services'
+        'build:Rebuild and start services'
+        'logs:View logs from all services'
+        'status:Show status of services'
+        'clean:Clean everything (DESTRUCTIVE)'
+        'php74:Access PHP 7.4 container'
+        'php82:Access PHP 8.2 container'
+        'mysql:Access MySQL shell'
+        'info:Show service information'
+        'help:Show help'
+    )
+    _describe 'commands' commands
+}
+
+compdef _devstack_completion devstack
+```
+
+### Useful environment variables
+
+```bash
+# Export for use in other scripts - Change <DEVSTACK_PATH> to your real path
+export DEVSTACK_DIR="<DEVSTACK_PATH>"
+export DEVSTACK_PHP74_PORT="8074"
+export DEVSTACK_PHP82_PORT="8082"
+
+# Examples:
+# export DEVSTACK_DIR="$HOME/devstack"
+# export DEVSTACK_DIR="$HOME/Projects/devstack"
+```
+
+## License
+
+This project is under the MIT License. See the LICENSE file for more details.
+
+## 🤝 Contributions
+
+Contributions are welcome. Please:
+
+1. Fork the project
+2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
