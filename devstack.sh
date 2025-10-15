@@ -69,8 +69,57 @@ stop_services() {
 
 restart_services() {
     echo -e "${YELLOW}Restarting DevStack services...${NC}"
-    cd "$SCRIPT_DIR" && docker-compose down
-    cd "$SCRIPT_DIR" && docker-compose up -d
+
+    # Check if there are mounted projects
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+    local has_projects=false
+
+    if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
+        has_projects=true
+        echo -e "${BLUE}Detected mounted projects. Performing clean restart...${NC}"
+    fi
+
+    # Stop all services first
+    cd "$SCRIPT_DIR"
+    echo -e "${BLUE}Stopping all services...${NC}"
+    docker-compose down
+
+    # Force remove any conflicting containers
+    echo -e "${BLUE}Cleaning up containers...${NC}"
+    docker ps -a --format "table {{.Names}}" | grep -E "(apache-php|mysql|phpmyadmin)" | xargs -r docker rm -f >/dev/null 2>&1
+
+    if [ "$has_projects" = true ]; then
+        # Start base services first (MySQL and phpMyAdmin)
+        echo -e "${BLUE}Starting base services...${NC}"
+        docker-compose up -d database phpmyadmin
+
+        # Wait for MySQL to be ready
+        echo -e "${BLUE}Waiting for MySQL to be ready...${NC}"
+        sleep 5
+
+        # Get unique PHP versions from mounted projects
+        local php_versions=""
+        while IFS=':' read -r version link_name source_path; do
+            if [[ ! " $php_versions " =~ " $version " ]]; then
+                php_versions="$php_versions $version"
+            fi
+        done < "$projects_file"
+
+        # Restart each PHP container with its projects
+        for version in $php_versions; do
+            echo -e "${BLUE}Restarting $version with mounted projects...${NC}"
+            restart_container_with_project "$version"
+        done
+
+        # Start any remaining services
+        echo -e "${BLUE}Starting remaining services...${NC}"
+        docker-compose up -d
+    else
+        # No projects mounted, normal startup
+        echo -e "${BLUE}Starting all services...${NC}"
+        docker-compose up -d
+    fi
+
     echo -e "${GREEN}Services restarted successfully!${NC}"
     show_info
 }
