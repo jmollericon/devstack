@@ -14,6 +14,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Load environment variables from script directory
@@ -226,7 +227,7 @@ show_info() {
                     echo -e "${BLUE}PHP 7.4 Projects:${NC}"
                     found_php74=true
                 fi
-                echo -e "  ${YELLOW}$project_name${NC} -> http://localhost:${PHP_74_PORT}/$project_name/"
+                echo -e "  ${YELLOW}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:${PHP_74_PORT}/$project_name/"
             fi
         done < "$projects_file"
 
@@ -238,7 +239,7 @@ show_info() {
                     echo -e "${BLUE}PHP 8.2 Projects:${NC}"
                     found_php82=true
                 fi
-                echo -e "  ${YELLOW}$project_name${NC} -> http://localhost:${PHP_82_PORT}/$project_name/"
+                echo -e "  ${YELLOW}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:${PHP_82_PORT}/$project_name/"
             fi
         done < "$projects_file"
     fi
@@ -441,7 +442,7 @@ list_projects() {
 
                 while IFS=':' read -r file_version project_name source_path; do
                     if [ "$file_version" = "$version" ]; then
-                        echo -e "  ${GREEN}$project_name${NC} -> $source_path"
+                        echo -e "  ${GREEN}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
                         found_projects=true
                     fi
                 done < "$projects_file"
@@ -463,7 +464,7 @@ list_projects() {
 
             while IFS=':' read -r file_version project_name source_path; do
                 if [ "$file_version" = "$php_version" ]; then
-                    echo -e "  ${GREEN}$project_name${NC} -> $source_path"
+                    echo -e "  ${GREEN}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
                     found_projects=true
                 fi
             done < "$projects_file"
