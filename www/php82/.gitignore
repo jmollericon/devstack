@@ -1,4 +1,6 @@
 *
 !.gitignore
+!.dockerignore
 !Dockerfile
+!php.ini
 !index.php

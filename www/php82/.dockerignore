@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+.tmp
+.temp
+tmp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Composer vendor (will be installed in container)
+vendor/
+
+# Cache directories
+.cache/
+cache/
+
+# Test files
+tests/
+phpunit.xml
+.phpunit.result.cache

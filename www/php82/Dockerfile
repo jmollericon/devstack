@@ -1,86 +1,86 @@
 FROM php:8.2-apache
 
-# Update
-RUN apt-get -y update --fix-missing && \
-    apt-get upgrade -y && \
-    apt-get --no-install-recommends install -y apt-utils && \
-    rm -rf /var/lib/apt/lists/*
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Install useful tools and install important libraies
-RUN apt-get -y update && \
-    apt-get -y --no-install-recommends install nano wget \
-    dialog \
-    libsqlite3-dev \
-    libsqlite3-0 && \
-    apt-get -y --no-install-recommends install default-mysql-client \
-    zlib1g-dev \
-    libzip-dev \
-    libicu-dev && \
-    apt-get -y --no-install-recommends install --fix-missing apt-utils \
-    build-essential \
-    git \
-    curl \
-    libonig-dev && \
-    apt-get install -y iputils-ping && \
-    apt-get -y --no-install-recommends install --fix-missing libcurl4 \
-    libcurl4-openssl-dev \
-    zip \
-    openssl && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install system dependencies and PHP extensions in a single layer
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        apt-utils \
+        nano \
+        wget \
+        dialog \
+        default-mysql-client \
+        build-essential \
+        git \
+        curl \
+        zip \
+        unzip \
+        openssl \
+        iputils-ping \
+        # Library dependencies
+        libsqlite3-dev \
+        libsqlite3-0 \
+        zlib1g-dev \
+        libzip-dev \
+        libicu-dev \
+        libonig-dev \
+        libcurl4-openssl-dev \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+        libmagickwand-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install xdebug
-RUN pecl install xdebug-3.1.4 && \
-    docker-php-ext-enable xdebug && \
-    mkdir /var/log/xdebug
+# Configure and install PHP extensions
+RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
+    docker-php-ext-configure calendar && \
+    docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        pdo_sqlite \
+        mysqli \
+        curl \
+        zip \
+        intl \
+        mbstring \
+        gettext \
+        calendar \
+        exif \
+        gd \
+        bcmath \
+        opcache
 
-# Install redis
-RUN pecl install redis-5.1.1 && \
-    docker-php-ext-enable redis
+# Install PECL extensions
+RUN pecl install \
+        xdebug-3.3.2 \
+        redis-6.0.2 \
+        imagick \
+    && docker-php-ext-enable \
+        xdebug \
+        redis \
+        imagick
 
-# Install imagick
-RUN apt-get update && \
-    apt-get -y --no-install-recommends install --fix-missing libmagickwand-dev && \
-    rm -rf /var/lib/apt/lists/* && \
-    pecl install imagick && \
-    docker-php-ext-enable imagick
-
-# Other php8 Extensions
-RUN docker-php-ext-install pdo_mysql && \
-    docker-php-ext-install pdo_sqlite && \
-    docker-php-ext-install mysqli && \
-    docker-php-ext-install curl && \
-    docker-php-ext-install tokenizer && \
-    docker-php-ext-install json && \
-    docker-php-ext-install zip && \
-    docker-php-ext-install -j$(nproc) intl && \
-    docker-php-ext-install mbstring && \
-    docker-php-ext-install gettext && \
-    docker-php-ext-install calendar && \
-    docker-php-ext-install exif
-
-RUN docker-php-ext-configure calendar && docker-php-ext-install calendar
-
-# Install Freetype
-RUN apt-get -y update && \
-    apt-get --no-install-recommends install -y libfreetype6-dev \
-    libjpeg62-turbo-dev \
-    libpng-dev && \
-    rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd
-
-# Insure an SSL directory exists
-RUN mkdir -p /etc/apache2/ssl
-
-# Enable SSL support
-RUN a2enmod ssl && a2enmod rewrite
-
-# Enable apache modules
-RUN a2enmod rewrite headers
-
-# Cleanup
-RUN rm -rf /usr/src/*
+# Create xdebug log directory
+RUN mkdir -p /var/log/xdebug
 
 # Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+# Configure Apache modules
+RUN a2enmod ssl rewrite headers
+
+# Create SSL directory
+RUN mkdir -p /etc/apache2/ssl
+
+# Copy PHP configuration
+COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Cleanup
+RUN rm -rf /usr/src/* /tmp/* /var/tmp/*
+
+# Reset environment
+ENV DEBIAN_FRONTEND=dialog
