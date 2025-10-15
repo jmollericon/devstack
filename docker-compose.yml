@@ -8,9 +8,9 @@ services:
       - ./mysql/5.7.44:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_57_ROOT_PASSWORD}
-      MYSQL_PASSWORD: ${MYSQL_57_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_57_DATABASE}
       MYSQL_USER: ${MYSQL_57_USER}
+      MYSQL_PASSWORD: ${MYSQL_57_PASSWORD}
     ports:
       - "${MYSQL_57_PORT}:3306"
     networks:
@@ -32,6 +32,10 @@ services:
       - "${PHPMYADMIN_PORT}:80"
     environment:
       PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_57_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_57_ROOT_PASSWORD}
     networks:
       - network
 
