@@ -32,6 +32,7 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
 2. **Start the stack:**
 
    ```bash
+   # Initial setup (from devstack directory)
    ./devstack.sh start
    ```
 
@@ -53,6 +54,7 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
    # Then use from any directory:
    devstack start
    devstack info
+   devstack mount ~/my-project php82
    ```
 
 ## 🛠️ Available Commands
@@ -71,6 +73,28 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
 ./devstack.sh php82       # Access PHP 8.2 container
 ./devstack.sh mysql       # Access MySQL shell
 ./devstack.sh info        # Show service information
+./devstack.sh mount       # Mount external project
+./devstack.sh unmount     # Unmount project
+./devstack.sh mounts      # List mounted projects
+```
+
+### With Global Alias (Recommended)
+
+```bash
+devstack start           # Start all services
+devstack stop            # Stop all services
+devstack restart         # Restart all services
+devstack build           # Rebuild and start services
+devstack logs            # View logs from all services
+devstack status          # Show status of services
+devstack clean           # Clean everything (DESTRUCTIVE)
+devstack php74           # Access PHP 7.4 container
+devstack php82           # Access PHP 8.2 container
+devstack mysql           # Access MySQL shell
+devstack info            # Show service information
+devstack mount           # Mount external project
+devstack unmount         # Unmount project
+devstack mounts          # List mounted projects
 ```
 
 ### Configure Global Alias (Recommended)
@@ -131,56 +155,57 @@ docker-compose ps         # View container status
 
 ## � Project Management
 
-### Linking External Projects
+### Mounting External Projects
 
-You can easily mount external projects as symlinks in your DevStack environment:
+You can easily mount external projects using Docker bind mounts in your DevStack environment:
 
 ```bash
-# Link current directory as "project" in PHP 8.2
-devstack link . php82
+# Mount current directory as "project" in PHP 8.2
+devstack mount . php82
 
-# Link specific project with custom name
-devstack link ~/Projects/my-app php74 myapp
+# Mount specific project with custom name
+devstack mount ~/Projects/my-app php74 myapp
 
-# Link Laravel project
-devstack link ~/Code/laravel-blog php82 blog
+# Mount Laravel project
+devstack mount ~/Code/laravel-blog php82 blog
 
-# List all linked projects
-devstack links
+# List all mounted projects
+devstack mounts
 
-# List links for specific PHP version
-devstack links php74
+# List mounts for specific PHP version
+devstack mounts php74
 
-# Remove a linked project
-devstack unlink php82 project
-devstack unlink php74 myapp
+# Remove a mounted project
+devstack unmount php82 project
+devstack unmount php74 myapp
 ```
 
 ### How It Works
 
-- Projects are linked using symbolic links (symlinks)
-- Links are created in `www/php74/` or `www/php82/` directories
-- Access your linked projects via:
+- Projects are mounted using Docker bind mounts (no file duplication)
+- Projects are accessible in `www/php74/` or `www/php82/` directories inside containers
+- Access your mounted projects via:
   - PHP 7.4: `http://localhost:8074/project-name/`
   - PHP 8.2: `http://localhost:8082/project-name/`
 - If no name is provided, "project" is used as default
-- Symlinks preserve file permissions and real-time editing
+- Real-time synchronization between host and container (no copying)
+- Changes made in your IDE are immediately reflected in the container
 
 ### Examples
 
 ```bash
-# Link a WordPress site
-devstack link ~/Sites/wordpress-site php74 wp
+# Mount a WordPress site
+devstack mount ~/Sites/wordpress-site php74 wp
 
 # Access it at: http://localhost:8074/wp/
 
-# Link a Laravel API
-devstack link ~/Code/api-project php82 api
+# Mount a Laravel API
+devstack mount ~/Code/api-project php82 api
 
 # Access it at: http://localhost:8082/api/
 
 # Remove when done
-devstack unlink php82 api
+devstack unmount php82 api
 ```
 
 ## �🔧 Configuration
@@ -380,8 +405,8 @@ sudo chown -R $USER:$USER ./mysql/
 ### Clean everything and start fresh
 
 ```bash
-./devstack.sh clean
-./devstack.sh build
+devstack clean
+devstack build
 ```
 
 ### View specific logs
@@ -431,6 +456,9 @@ _devstack_completion() {
         'php82:Access PHP 8.2 container'
         'mysql:Access MySQL shell'
         'info:Show service information'
+        'mount:Mount external project'
+        'unmount:Unmount project'
+        'mounts:List mounted projects'
         'help:Show help'
     )
     _describe 'commands' commands
@@ -471,7 +499,7 @@ devstack mysql    # Direct MySQL access
 devstack logs
 ```
 
-### Autocompletado para el alias (opcional)
+### Shell Autocompletion (optional)
 
 To enable autocompletion in zsh:
 
@@ -491,6 +519,9 @@ _devstack_completion() {
         'php82:Access PHP 8.2 container'
         'mysql:Access MySQL shell'
         'info:Show service information'
+        'mount:Mount external project'
+        'unmount:Unmount project'
+        'mounts:List mounted projects'
         'help:Show help'
     )
     _describe 'commands' commands
