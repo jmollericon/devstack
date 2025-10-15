@@ -6,6 +6,9 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,11 +16,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Load environment variables
-if [ -f .env ]; then
-    source .env
+# Load environment variables from script directory
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    source "$SCRIPT_DIR/.env"
 else
-    echo -e "${RED}Error: .env file not found. Please copy .env.example to .env and configure it.${NC}"
+    echo -e "${RED}Error: .env file not found in $SCRIPT_DIR. Please copy .env.example to .env and configure it.${NC}"
     exit 1
 fi
 
@@ -44,42 +47,42 @@ print_help() {
 
 start_services() {
     echo -e "${GREEN}Starting DevStack services...${NC}"
-    docker-compose up -d
+    cd "$SCRIPT_DIR" && docker-compose up -d
     echo -e "${GREEN}Services started successfully!${NC}"
     show_info
 }
 
 stop_services() {
     echo -e "${YELLOW}Stopping DevStack services...${NC}"
-    docker-compose down
+    cd "$SCRIPT_DIR" && docker-compose down
     echo -e "${GREEN}Services stopped successfully!${NC}"
 }
 
 restart_services() {
     echo -e "${YELLOW}Restarting DevStack services...${NC}"
-    docker-compose down
-    docker-compose up -d
+    cd "$SCRIPT_DIR" && docker-compose down
+    cd "$SCRIPT_DIR" && docker-compose up -d
     echo -e "${GREEN}Services restarted successfully!${NC}"
     show_info
 }
 
 build_services() {
     echo -e "${BLUE}Building DevStack services...${NC}"
-    docker-compose down
-    docker-compose build --no-cache
-    docker-compose up -d
+    cd "$SCRIPT_DIR" && docker-compose down
+    cd "$SCRIPT_DIR" && docker-compose build --no-cache
+    cd "$SCRIPT_DIR" && docker-compose up -d
     echo -e "${GREEN}Services built and started successfully!${NC}"
     show_info
 }
 
 show_logs() {
     echo -e "${BLUE}Showing logs from all services...${NC}"
-    docker-compose logs -f
+    cd "$SCRIPT_DIR" && docker-compose logs -f
 }
 
 show_status() {
     echo -e "${BLUE}DevStack Services Status:${NC}"
-    docker-compose ps
+    cd "$SCRIPT_DIR" && docker-compose ps
 }
 
 clean_everything() {
@@ -88,7 +91,7 @@ clean_everything() {
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Cleaning up everything...${NC}"
-        docker-compose down -v --remove-orphans
+        cd "$SCRIPT_DIR" && docker-compose down -v --remove-orphans
         docker system prune -f
         echo -e "${GREEN}Cleanup completed!${NC}"
     else

@@ -77,6 +77,8 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
 
 To use `devstack` from any directory without needing `./` and without being in the project directory:
 
+> **✅ Enhanced:** The script now automatically detects its own location, so it works correctly from any directory once the alias is configured.
+
 #### 🔍 First step: Get the full path
 
 ```bash
@@ -298,6 +300,20 @@ PHP_74_PORT=9074
 PHP_82_PORT=9082
 PHPMYADMIN_PORT=9080
 MYSQL_57_PORT=3307
+```
+
+### Script works from any directory
+
+The script automatically detects its location and loads the correct `.env` file. If you encounter issues:
+
+```bash
+# Make sure the alias points to the full path
+which devstack
+# Should show: /path/to/your/devstack/devstack.sh
+
+# Test from any directory
+cd /tmp
+devstack status
 ```
 
 ### File permissions
