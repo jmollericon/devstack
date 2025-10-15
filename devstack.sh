@@ -244,9 +244,9 @@ restart_container_with_project() {
 
     # Add project mounts from tracking file
     if [ -f "$projects_file" ]; then
-        while IFS=':' read -r version link_name project_path; do
+        while IFS=':' read -r version link_name source_path; do
             if [ "$version" = "$php_version" ]; then
-                docker_cmd="$docker_cmd -v $project_path:/var/www/html/$link_name"
+                docker_cmd="$docker_cmd -v $source_path:/var/www/html/$link_name"
             fi
         done < "$projects_file"
     fi
@@ -330,9 +330,9 @@ list_projects() {
                 echo -e "${YELLOW}$version:${NC}"
                 local found_projects=false
 
-                while IFS=':' read -r file_version project_name project_path; do
+                while IFS=':' read -r file_version project_name source_path; do
                     if [ "$file_version" = "$version" ]; then
-                        echo -e "  ${GREEN}$project_name${NC} -> $project_path"
+                        echo -e "  ${GREEN}$project_name${NC} -> $source_path"
                         found_projects=true
                     fi
                 done < "$projects_file"
@@ -352,9 +352,9 @@ list_projects() {
         if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
             local found_projects=false
 
-            while IFS=':' read -r file_version project_name project_path; do
+            while IFS=':' read -r file_version project_name source_path; do
                 if [ "$file_version" = "$php_version" ]; then
-                    echo -e "  ${GREEN}$project_name${NC} -> $project_path"
+                    echo -e "  ${GREEN}$project_name${NC} -> $source_path"
                     found_projects=true
                 fi
             done < "$projects_file"
