@@ -85,7 +85,7 @@ services:
 
 networks:
   network:
-    name: network
+    name: ${NETWORK_NAME}
     driver: bridge
 
 volumes:
