@@ -1,63 +1,89 @@
 services:
   database:
-    container_name: mysql5.7.44
+    container_name: ${MYSQL57_CONTAINER_NAME}
     platform: linux/x86_64
     image: mysql:5.7.44
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./mysql/5.7.44:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_57_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_57_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_57_DATABASE}
+      MYSQL_USER: ${MYSQL_57_USER}
     ports:
-      - 3306:3306
+      - "${MYSQL_57_PORT}:3306"
     networks:
       - network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   phpmyadmin:
-    container_name: phpmyamin
+    container_name: ${PHPMYADMIN_CONTAINER_NAME}
     platform: linux/x86_64
-    image: phpmyadmin/phpmyadmin
-    restart: always
-    links:
-      - database
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
-      - 8080:80
+      - "${PHPMYADMIN_PORT}:80"
     environment:
       PMA_HOST: database
     networks:
       - network
 
   php74:
-    container_name: "apache-php7.4"
+    container_name: ${PHP74_CONTAINER_NAME}
     build:
       context: ./www/php74
       dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
       - ./www/php74:/var/www/html
     ports:
-      - 8074:80
-    links:
-      - database
+      - "${PHP_74_PORT}:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=database
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_57_DATABASE}
+      - MYSQL_USER=${MYSQL_57_USER}
+      - MYSQL_PASSWORD=${MYSQL_57_PASSWORD}
     networks:
       - network
 
   php82:
-    container_name: "apache-php8.2"
+    container_name: ${PHP82_CONTAINER_NAME}
     build:
       context: ./www/php82
       dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
       - ./www/php82:/var/www/html
     ports:
-      - 8082:80
-    links:
-      - database
+      - "${PHP_82_PORT}:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=database
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_57_DATABASE}
+      - MYSQL_USER=${MYSQL_57_USER}
+      - MYSQL_PASSWORD=${MYSQL_57_PASSWORD}
     networks:
       - network
 
 networks:
   network:
+    name: network
+    driver: bridge
 
 volumes:
   mysql:
+    name: ${MYSQL57_CONTAINER_NAME}_data
