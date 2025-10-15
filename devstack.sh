@@ -54,10 +54,56 @@ print_help() {
     echo "  devstack mounts                           # Show all mounted projects"
 }
 
+# Function to detect and remount existing projects
+detect_and_remount_projects() {
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+    local temp_projects=()
+
+    if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
+        echo -e "${BLUE}Detected mounted projects. Re-mounting...${NC}"
+        # Read all mounted projects into array
+        while IFS=':' read -r version link_name source_path; do
+            temp_projects+=("$version:$link_name:$source_path")
+            echo -e "${YELLOW}  Found: $link_name ($version) -> $source_path${NC}"
+        done < "$projects_file"
+
+        # Clear the projects file temporarily to avoid conflicts during mount
+        > "$projects_file"
+
+        # Wait for services to be ready
+        echo -e "${BLUE}Waiting for services to be ready...${NC}"
+        sleep 5
+
+        # Re-mount all projects
+        if [ ${#temp_projects[@]} -gt 0 ]; then
+            echo -e "${BLUE}Re-mounting projects...${NC}"
+            for project_info in "${temp_projects[@]}"; do
+                IFS=':' read -r version link_name source_path <<< "$project_info"
+                echo -e "${BLUE}Re-mounting: $link_name in $version${NC}"
+
+                # Add project back to tracking file
+                echo "$version:$link_name:$source_path" >> "$projects_file"
+
+                # Restart only the specific container with the new mount
+                restart_container_with_project "$version"
+            done
+            echo -e "${GREEN}All projects re-mounted successfully!${NC}"
+            return 0
+        fi
+    fi
+    return 1
+}
+
 start_services() {
     echo -e "${GREEN}Starting DevStack services...${NC}"
     cd "$SCRIPT_DIR" && docker-compose up -d
     echo -e "${GREEN}Services started successfully!${NC}"
+
+    # Check for existing projects and remount them
+    if detect_and_remount_projects; then
+        echo -e "${GREEN}Projects restored from previous session!${NC}"
+    fi
+
     show_info
 }
 
@@ -88,30 +134,20 @@ restart_services() {
     echo -e "${BLUE}Stopping all services...${NC}"
     docker-compose down
 
-    # Clear the projects file temporarily to avoid conflicts during mount
-    > "$projects_file"
-
     echo -e "${BLUE}Starting all services...${NC}"
     docker-compose up -d
 
-    # Wait for services to be ready
-    echo -e "${BLUE}Waiting for services to be ready...${NC}"
-    sleep 5
-
-    # Re-mount all projects that were previously mounted
+    # Re-mount projects using the shared function
     if [ ${#temp_projects[@]} -gt 0 ]; then
-        echo -e "${BLUE}Re-mounting previous projects...${NC}"
+        # Restore the projects file first
+        > "$projects_file"
         for project_info in "${temp_projects[@]}"; do
             IFS=':' read -r version link_name source_path <<< "$project_info"
-            echo -e "${BLUE}Re-mounting: $link_name in $version${NC}"
-
-            # Add project back to tracking file (without restart since services are already running)
             echo "$version:$link_name:$source_path" >> "$projects_file"
-
-            # Restart only the specific container with the new mount
-            restart_container_with_project "$version"
         done
-        echo -e "${GREEN}All projects re-mounted successfully!${NC}"
+
+        # Use the shared remount function
+        detect_and_remount_projects
     fi
 
     echo -e "${GREEN}Services restarted successfully!${NC}"
