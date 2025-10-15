@@ -129,7 +129,61 @@ docker-compose logs -f    # View logs in real time
 docker-compose ps         # View container status
 ```
 
-## 🔧 Configuration
+## � Project Management
+
+### Linking External Projects
+
+You can easily mount external projects as symlinks in your DevStack environment:
+
+```bash
+# Link current directory as "project" in PHP 8.2
+devstack link . php82
+
+# Link specific project with custom name
+devstack link ~/Projects/my-app php74 myapp
+
+# Link Laravel project
+devstack link ~/Code/laravel-blog php82 blog
+
+# List all linked projects
+devstack links
+
+# List links for specific PHP version
+devstack links php74
+
+# Remove a linked project
+devstack unlink php82 project
+devstack unlink php74 myapp
+```
+
+### How It Works
+
+- Projects are linked using symbolic links (symlinks)
+- Links are created in `www/php74/` or `www/php82/` directories
+- Access your linked projects via:
+  - PHP 7.4: `http://localhost:8074/project-name/`
+  - PHP 8.2: `http://localhost:8082/project-name/`
+- If no name is provided, "project" is used as default
+- Symlinks preserve file permissions and real-time editing
+
+### Examples
+
+```bash
+# Link a WordPress site
+devstack link ~/Sites/wordpress-site php74 wp
+
+# Access it at: http://localhost:8074/wp/
+
+# Link a Laravel API
+devstack link ~/Code/api-project php82 api
+
+# Access it at: http://localhost:8082/api/
+
+# Remove when done
+devstack unlink php82 api
+```
+
+## �🔧 Configuration
 
 ### Environment variables (`.env`)
 
