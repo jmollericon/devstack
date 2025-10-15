@@ -227,7 +227,8 @@ show_info() {
                     echo -e "${BLUE}PHP 7.4 Projects:${NC}"
                     found_php74=true
                 fi
-                echo -e "  ${YELLOW}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:${PHP_74_PORT}/$project_name/"
+                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_74_PORT}/$project_name/"
+                echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
 
@@ -239,7 +240,8 @@ show_info() {
                     echo -e "${BLUE}PHP 8.2 Projects:${NC}"
                     found_php82=true
                 fi
-                echo -e "  ${YELLOW}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:${PHP_82_PORT}/$project_name/"
+                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_82_PORT}/$project_name/"
+                echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
     fi
@@ -332,7 +334,7 @@ mount_project() {
 
 restart_all_containers_with_projects() {
     local projects_file="$SCRIPT_DIR/.devstack_projects"
-    
+
     if [ ! -f "$projects_file" ] || [ ! -s "$projects_file" ]; then
         echo -e "${YELLOW}No projects to mount${NC}"
         return 0
@@ -343,7 +345,7 @@ restart_all_containers_with_projects() {
     # Determine which PHP versions have projects
     local has_php74=false
     local has_php82=false
-    
+
     while IFS=':' read -r version link_name source_path; do
         if [ "$version" = "php74" ]; then
             has_php74=true
@@ -524,7 +526,8 @@ list_projects() {
 
                 while IFS=':' read -r file_version project_name source_path; do
                     if [ "$file_version" = "$version" ]; then
-                        echo -e "  ${GREEN}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
+                        echo -e "  ${GREEN}$project_name${NC} → http://localhost:$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
+                        echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                         found_projects=true
                     fi
                 done < "$projects_file"
@@ -546,7 +549,8 @@ list_projects() {
 
             while IFS=':' read -r file_version project_name source_path; do
                 if [ "$file_version" = "$php_version" ]; then
-                    echo -e "  ${GREEN}$project_name${NC} ${CYAN}[$source_path]${NC} -> http://localhost:$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
+                    echo -e "  ${GREEN}$project_name${NC} → http://localhost:$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || echo "$PHP_82_PORT")/$project_name/"
+                    echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                     found_projects=true
                 fi
             done < "$projects_file"
