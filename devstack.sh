@@ -75,19 +75,19 @@ detect_and_remount_projects() {
         echo -e "${BLUE}Waiting for services to be ready...${NC}"
         sleep 5
 
-        # Re-mount all projects
+        # Re-mount all projects efficiently
         if [ ${#temp_projects[@]} -gt 0 ]; then
-            echo -e "${BLUE}Re-mounting projects...${NC}"
+            echo -e "${BLUE}Re-mounting all projects...${NC}"
+
+            # Restore the projects file first
             for project_info in "${temp_projects[@]}"; do
                 IFS=':' read -r version link_name source_path <<< "$project_info"
-                echo -e "${BLUE}Re-mounting: $link_name in $version${NC}"
-
-                # Add project back to tracking file
                 echo "$version:$link_name:$source_path" >> "$projects_file"
-
-                # Restart only the specific container with the new mount
-                restart_container_with_project "$version"
             done
+
+            # Restart all containers with projects at once
+            restart_all_containers_with_projects
+
             echo -e "${GREEN}All projects re-mounted successfully!${NC}"
             return 0
         fi
@@ -328,6 +328,88 @@ mount_project() {
         echo -e "${RED}Error: Failed to mount project${NC}"
         return 1
     fi
+}
+
+restart_all_containers_with_projects() {
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+    
+    if [ ! -f "$projects_file" ] || [ ! -s "$projects_file" ]; then
+        echo -e "${YELLOW}No projects to mount${NC}"
+        return 0
+    fi
+
+    echo -e "${BLUE}Restarting all containers with mounted projects...${NC}"
+
+    # Determine which PHP versions have projects
+    local has_php74=false
+    local has_php82=false
+    
+    while IFS=':' read -r version link_name source_path; do
+        if [ "$version" = "php74" ]; then
+            has_php74=true
+        elif [ "$version" = "php82" ]; then
+            has_php82=true
+        fi
+    done < "$projects_file"
+
+    cd "$SCRIPT_DIR"
+
+    # Create a comprehensive override file for all services that need projects
+    local override_file="docker-compose.override.tmp.yml"
+    echo "services:" > "$override_file"
+
+    # Configure PHP 7.4 if it has projects
+    if [ "$has_php74" = true ]; then
+        cat >> "$override_file" << EOF
+  php74:
+    volumes:
+      - ./www/php74:/var/www/html
+EOF
+        # Add all PHP 7.4 projects
+        while IFS=':' read -r version link_name source_path; do
+            if [ "$version" = "php74" ]; then
+                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
+            fi
+        done < "$projects_file"
+    fi
+
+    # Configure PHP 8.2 if it has projects
+    if [ "$has_php82" = true ]; then
+        cat >> "$override_file" << EOF
+  php82:
+    volumes:
+      - ./www/php82:/var/www/html
+EOF
+        # Add all PHP 8.2 projects
+        while IFS=':' read -r version link_name source_path; do
+            if [ "$version" = "php82" ]; then
+                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
+            fi
+        done < "$projects_file"
+    fi
+
+    # Stop and restart all containers with projects at once
+    local services_to_restart=""
+    [ "$has_php74" = true ] && services_to_restart="$services_to_restart php74"
+    [ "$has_php82" = true ] && services_to_restart="$services_to_restart php82"
+
+    if [ -n "$services_to_restart" ]; then
+        echo -e "${BLUE}Stopping containers: $services_to_restart${NC}"
+        docker-compose stop $services_to_restart
+        docker-compose rm -f $services_to_restart
+
+        echo -e "${BLUE}Starting containers with projects...${NC}"
+        docker-compose -f docker-compose.yml -f "$override_file" up -d $services_to_restart
+
+        # Wait for containers to be ready
+        sleep 3
+    fi
+
+    # Clean up the temporary override file
+    rm -f "$override_file"
+
+    echo -e "${GREEN}All containers restarted with projects successfully!${NC}"
+    return 0
 }
 
 restart_container_with_project() {
