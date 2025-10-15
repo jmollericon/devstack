@@ -27,6 +27,8 @@ Un stack de desarrollo completo con PHP 7.4, PHP 8.2, MySQL 5.7 y phpMyAdmin usa
    # Editar .env con tus configuraciones
    ```
 
+   > **💡 Obtener la ruta completa:** Ejecuta `pwd` dentro del directorio devstack para obtener la ruta completa que necesitarás para configurar el alias.
+
 2. **Iniciar el stack:**
 
    ```bash
@@ -34,9 +36,24 @@ Un stack de desarrollo completo con PHP 7.4, PHP 8.2, MySQL 5.7 y phpMyAdmin usa
    ```
 
 3. **Acceder a los servicios:**
+
    - PHP 7.4: http://localhost:8074
    - PHP 8.2: http://localhost:8082
    - phpMyAdmin: http://localhost:8080
+
+4. **Configurar alias global (opcional pero recomendado):**
+
+   ```bash
+   # Para zsh (macOS) - Reemplaza <RUTA_AL_DEVSTACK> con tu ruta real
+   echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.zshrc
+   source ~/.zshrc
+
+   # Ejemplo: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.zshrc
+
+   # Luego usar desde cualquier directorio:
+   devstack start
+   devstack info
+   ```
 
 ## 🛠️ Comandos Disponibles
 
@@ -54,6 +71,51 @@ Un stack de desarrollo completo con PHP 7.4, PHP 8.2, MySQL 5.7 y phpMyAdmin usa
 ./devstack.sh php82       # Acceder al contenedor PHP 8.2
 ./devstack.sh mysql       # Acceder a MySQL shell
 ./devstack.sh info        # Mostrar información de servicios
+```
+
+### Configurar Alias Global (Recomendado)
+
+Para usar `devstack` desde cualquier directorio sin necesidad de `./` y sin estar en el directorio del proyecto:
+
+#### 🔍 Primer paso: Obtener la ruta completa
+
+```bash
+# Navegar al directorio de DevStack y obtener la ruta completa
+cd devstack
+pwd
+# Ejemplo de salida: /Users/tu-usuario/Projects/devstack
+# Copia esta ruta para usar en los siguientes pasos
+```
+
+#### Para zsh (macOS por defecto):
+
+```bash
+# Agregar al final de ~/.zshrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.zshrc
+source ~/.zshrc
+
+# Ejemplos de rutas comunes:
+# echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.zshrc
+# echo 'alias devstack="$HOME/Projects/devstack/devstack.sh"' >> ~/.zshrc
+```
+
+#### Para bash:
+
+```bash
+# Agregar al final de ~/.bashrc o ~/.bash_profile
+echo 'alias devstack="<RUTA_AL_DEVSTACK>/devstack.sh"' >> ~/.bashrc
+source ~/.bashrc
+
+# Ejemplo: echo 'alias devstack="$HOME/devstack/devstack.sh"' >> ~/.bashrc
+```
+
+#### Uso después de configurar el alias:
+
+```bash
+devstack start           # Desde cualquier directorio
+devstack stop            # Sin necesidad de ./
+devstack php74           # Acceso directo
+devstack info            # Información rápida
 ```
 
 ### Docker Compose tradicional
@@ -80,7 +142,65 @@ docker-compose ps         # Ver estado de contenedores
 | `MYSQL_57_USER`          | Usuario de MySQL          | `devstack`        |
 | `MYSQL_57_PASSWORD`      | Contraseña de usuario     | `root`            |
 
-## 🐛 Debugging con Xdebug
+### Configuración Avanzada del Alias
+
+Para una experiencia aún más fluida, puedes crear una función que cambie automáticamente al directorio del proyecto:
+
+#### Función avanzada para zsh:
+
+```bash
+# Agregar al final de ~/.zshrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+function devstack() {
+    local DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+    local CURRENT_DIR=$(pwd)
+
+    cd "$DEVSTACK_DIR"
+    ./devstack.sh "$@"
+    local EXIT_CODE=$?
+
+    # Regresar al directorio original
+    cd "$CURRENT_DIR"
+    return $EXIT_CODE
+}
+
+# Ejemplo: local DEVSTACK_DIR="$HOME/devstack"
+```
+
+#### Función avanzada para bash:
+
+```bash
+# Agregar al final de ~/.bashrc - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+devstack() {
+    local DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+    local CURRENT_DIR=$(pwd)
+
+    cd "$DEVSTACK_DIR"
+    ./devstack.sh "$@"
+    local EXIT_CODE=$?
+
+    # Regresar al directorio original
+    cd "$CURRENT_DIR"
+    return $EXIT_CODE
+}
+
+# Ejemplo: local DEVSTACK_DIR="$HOME/devstack"
+```
+
+#### Alias simple (recomendado para la mayoría de usuarios):
+
+```bash
+# Para zsh (agregar a ~/.zshrc)
+alias devstack="cd <RUTA_AL_DEVSTACK> && ./devstack.sh"
+
+# Para bash (agregar a ~/.bashrc)
+alias devstack="cd <RUTA_AL_DEVSTACK> && ./devstack.sh"
+
+# Ejemplos:
+# alias devstack="cd $HOME/devstack && ./devstack.sh"
+# alias devstack="cd $HOME/Projects/devstack && ./devstack.sh"
+```
+
+> **Nota:** Reemplaza `<RUTA_AL_DEVSTACK>` con la ruta real donde tienes instalado DevStack en tu sistema. Puedes usar variables como `$HOME` para hacer la configuración más portable.## 🐛 Debugging con Xdebug
 
 ### Configuración para VS Code
 
@@ -200,7 +320,67 @@ docker-compose logs php74       # Solo PHP 7.4
 docker-compose logs php82       # Solo PHP 8.2
 ```
 
-## 📄 Licencia
+## � Tips y Trucos
+
+### Comandos útiles con alias configurado
+
+```bash
+# Verificar estado rápidamente
+devstack status
+
+# Ver información de servicios
+devstack info
+
+# Acceso rápido a contenedores
+devstack php82    # Entrar a PHP 8.2
+devstack mysql    # Acceso directo a MySQL
+
+# Logs en tiempo real
+devstack logs
+```
+
+### Autocompletado para el alias (opcional)
+
+Para habilitar autocompletado en zsh:
+
+```bash
+# Agregar a ~/.zshrc
+_devstack_completion() {
+    local -a commands
+    commands=(
+        'start:Iniciar todos los servicios'
+        'stop:Detener todos los servicios'
+        'restart:Reiniciar todos los servicios'
+        'build:Reconstruir e iniciar servicios'
+        'logs:Ver logs de todos los servicios'
+        'status:Ver estado de los servicios'
+        'clean:Limpiar todo (DESTRUCTIVO)'
+        'php74:Acceder al contenedor PHP 7.4'
+        'php82:Acceder al contenedor PHP 8.2'
+        'mysql:Acceder a MySQL shell'
+        'info:Mostrar información de servicios'
+        'help:Mostrar ayuda'
+    )
+    _describe 'commands' commands
+}
+
+compdef _devstack_completion devstack
+```
+
+### Variables de entorno útiles
+
+```bash
+# Exportar para uso en otros scripts - Cambia <RUTA_AL_DEVSTACK> por tu ruta real
+export DEVSTACK_DIR="<RUTA_AL_DEVSTACK>"
+export DEVSTACK_PHP74_PORT="8074"
+export DEVSTACK_PHP82_PORT="8082"
+
+# Ejemplos:
+# export DEVSTACK_DIR="$HOME/devstack"
+# export DEVSTACK_DIR="$HOME/Projects/devstack"
+```
+
+## �📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
 
