@@ -153,7 +153,7 @@ docker-compose logs -f    # View logs in real time
 docker-compose ps         # View container status
 ```
 
-## � Project Management
+## Project Management
 
 ### Mounting External Projects
 
@@ -182,14 +182,23 @@ devstack unmount php74 myapp
 
 ### How It Works
 
-- Projects are mounted using Docker bind mounts (no file duplication)
-- Projects are accessible in `www/php74/` or `www/php82/` directories inside containers
-- Access your mounted projects via:
-  - PHP 7.4: `http://localhost:8074/project-name/`
-  - PHP 8.2: `http://localhost:8082/project-name/`
+- **Complete Docker Compose management**: All containers are managed by docker-compose for consistency
+- **Automatic project persistence**: Projects are automatically remounted after `stop`+`start` or `restart`
+- **Docker bind mounts**: No file duplication - real-time synchronization between host and container
+- **Unified information display**: All services and mounted projects shown in a single view
+- **Smart container restart**: Only affected containers are restarted when mounting/unmounting projects
+
+**Project access:**
+
+- PHP 7.4: `http://localhost:8074/project-name/`
+- PHP 8.2: `http://localhost:8082/project-name/`
 - If no name is provided, "project" is used as default
-- Real-time synchronization between host and container (no copying)
-- Changes made in your IDE are immediately reflected in the container
+
+**Persistence across sessions:**
+
+- Projects remain mounted after `devstack stop` + `devstack start`
+- Projects are automatically restored after `devstack restart`
+- Configuration stored in `.devstack_projects` (automatically managed)
 
 ### Examples
 
@@ -208,7 +217,34 @@ devstack mount ~/Code/api-project php82 api
 devstack unmount php82 api
 ```
 
-## �🔧 Configuration
+### Unified Information Display
+
+DevStack now provides a comprehensive status overview showing both services and mounted projects:
+
+```bash
+# When you run: devstack info
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ DevStack Service Information                                                                                       ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+🐘 PHP 7.4     → http://localhost:8074/
+🐘 PHP 8.2     → http://localhost:8082/
+🗄️  MySQL 5.7  → localhost:3306 (root/root)
+🌐 phpMyAdmin  → http://localhost:8080/
+
+📁 Mounted Projects:
+   → wp (PHP 7.4): http://localhost:8074/wp/
+   → api (PHP 8.2): http://localhost:8082/api/
+   → shop (PHP 8.2): http://localhost:8082/shop/
+
+🔧 Container Status:
+   ✅ devstack-php74 → running
+   ✅ devstack-php82 → running
+   ✅ devstack-mysql57 → running
+   ✅ devstack-phpmyadmin → running
+```
+
+## 🔧 Configuration
 
 ### Environment variables (`.env`)
 
