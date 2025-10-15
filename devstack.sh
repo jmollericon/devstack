@@ -31,27 +31,27 @@ print_help() {
     echo "Usage: ./devstack.sh [command]"
     echo ""
     echo "Commands:"
-    echo "  start                       Start all services"
-    echo "  stop                        Stop all services"
-    echo "  restart                     Restart all services"
-    echo "  build                       Build/rebuild all services"
-    echo "  logs                        Show logs from all services"
-    echo "  status                      Show status of all services"
-    echo "  clean                       Remove all containers and volumes (DESTRUCTIVE)"
-    echo "  link <path> <php> [name]    Create symlink to project"
-    echo "  unlink <php> [name]         Remove symlink"
-    echo "  links [php]                 List all symlinks"
-    echo "  php74                       Access PHP 7.4 container shell"
-    echo "  php82                       Access PHP 8.2 container shell"
-    echo "  mysql                       Access MySQL shell"
-    echo "  info                        Show service URLs and information"
-    echo "  help                        Show this help message"
+    echo "  start                           Start all services"
+    echo "  stop                            Stop all services"
+    echo "  restart                         Restart all services"
+    echo "  build                           Build/rebuild all services"
+    echo "  logs                            Show logs from all services"
+    echo "  status                          Show status of all services"
+    echo "  clean                           Remove all containers and volumes (DESTRUCTIVE)"
+    echo "  mount <path> <php> [name]       Mount project with bind mount"
+    echo "  unmount <php> [name]            Unmount project"
+    echo "  mounts [php]                    List all mounted projects"
+    echo "  php74                           Access PHP 7.4 container shell"
+    echo "  php82                           Access PHP 8.2 container shell"
+    echo "  mysql                           Access MySQL shell"
+    echo "  info                            Show service URLs and information"
+    echo "  help                            Show this help message"
     echo ""
-    echo "Examples:"
-    echo "  devstack link . php74                    # Link current dir as 'project'"
-    echo "  devstack link ~/Projects/blog php82 blog # Link with custom name"
-    echo "  devstack unlink php74                    # Remove 'project' link"
-    echo "  devstack links                           # Show all links"
+    echo "Project Examples:"
+    echo "  devstack mount . php74                    # Mount current dir as 'project'"
+    echo "  devstack mount ~/Projects/blog php82 blog # Mount with custom name"
+    echo "  devstack unmount php74 project           # Unmount project"
+    echo "  devstack mounts                           # Show all mounted projects"
 }
 
 start_services() {
@@ -135,27 +135,17 @@ show_info() {
     echo ""
 }
 
-link_project() {
+mount_project() {
     local project_path="$1"
     local php_version="$2"
-    local link_name="${3:-project}"
-    
+    local project_name="${3:-project}"
+
     if [ -z "$project_path" ] || [ -z "$php_version" ]; then
-        echo -e "${RED}Usage: devstack link <project_path> <php_version> [link_name]${NC}"
-        echo -e "${YELLOW}Examples:${NC}"
-        echo -e "  devstack link . php74                    # Current directory as 'project'"
-        echo -e "  devstack link /path/to/myapp php82       # Specific path as 'project'"
-        echo -e "  devstack link ~/Projects/blog php74 blog # Custom link name"
+        echo -e "${RED}Usage: devstack mount <path> <php74|php82> [name]${NC}"
         return 1
     fi
-    
-    # Validate PHP version
-    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ]; then
-        echo -e "${RED}Error: PHP version must be 'php74' or 'php82'${NC}"
-        return 1
-    fi
-    
-    # Resolve absolute path
+
+    # Resolve project path
     if [ "$project_path" = "." ]; then
         project_path="$(pwd)"
     else
@@ -170,118 +160,210 @@ link_project() {
             return 1
         fi
     fi
-    
+
     # Validate project path exists
     if [ ! -d "$project_path" ]; then
         echo -e "${RED}Error: Directory $project_path does not exist${NC}"
         return 1
     fi
-    
-    local target_dir="$SCRIPT_DIR/www/$php_version/$link_name"
-    
-    # Remove existing link/directory if it exists
-    if [ -L "$target_dir" ]; then
-        rm "$target_dir"
-        echo -e "${YELLOW}Removed existing symlink${NC}"
-    elif [ -d "$target_dir" ]; then
-        echo -e "${RED}Error: Directory $target_dir already exists (not a symlink)${NC}"
-        echo -e "${YELLOW}Please remove it manually or use a different link name${NC}"
-        return 1
-    fi
-    
-    # Create symlink
-    ln -s "$project_path" "$target_dir"
-    
-    echo -e "${GREEN}Project linked successfully!${NC}"
-    echo -e "${BLUE}Source:${NC}      $project_path"
-    echo -e "${BLUE}Linked to:${NC}   $target_dir"
-    
-    # Show access URL
-    if [ "$php_version" = "php74" ]; then
-        echo -e "${GREEN}Access at:${NC}   http://localhost:${PHP_74_PORT}/$link_name/"
-    else
-        echo -e "${GREEN}Access at:${NC}   http://localhost:${PHP_82_PORT}/$link_name/"
-    fi
-}
 
-unlink_project() {
-    local php_version="$1"
-    local link_name="${2:-project}"
-    
-    if [ -z "$php_version" ]; then
-        echo -e "${RED}Usage: devstack unlink <php_version> [link_name]${NC}"
-        echo -e "${YELLOW}Examples:${NC}"
-        echo -e "  devstack unlink php74          # Remove 'project' link"
-        echo -e "  devstack unlink php82 blog     # Remove 'blog' link"
-        return 1
-    fi
-    
     # Validate PHP version
     if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ]; then
         echo -e "${RED}Error: PHP version must be 'php74' or 'php82'${NC}"
         return 1
     fi
-    
-    local target_dir="$SCRIPT_DIR/www/$php_version/$link_name"
-    
-    if [ -L "$target_dir" ]; then
-        rm "$target_dir"
-        echo -e "${GREEN}Project unlinked successfully!${NC}"
-        echo -e "${BLUE}Removed:${NC} $target_dir"
-    elif [ -d "$target_dir" ]; then
-        echo -e "${YELLOW}Warning: $target_dir is a directory, not a symlink${NC}"
-        echo -e "${YELLOW}Use 'rm -rf $target_dir' to remove it manually${NC}"
+
+    # Create a configuration file to track mounted projects
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+
+    # Check if project is already mounted
+    if [ -f "$projects_file" ] && grep -q "^$php_version:$project_name:" "$projects_file"; then
+        echo -e "${YELLOW}Warning: $project_name already exists in $php_version${NC}"
+        echo -e "${YELLOW}Use 'devstack unmount $php_version $project_name' first${NC}"
+        return 1
+    fi
+
+    echo -e "${BLUE}Mounting project with Docker bind mount...${NC}"
+
+    # Add project configuration to tracking file
+    echo "$php_version:$project_name:$project_path" >> "$projects_file"
+
+    # Restart the specific container with the new mount
+    restart_container_with_project "$php_version"
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Project mounted successfully!${NC}"
+        echo -e "${BLUE}Source:      ${NC}$project_path"
+        echo -e "${BLUE}Mounted as:  ${NC}$project_name"
+
+        # Determine the port based on PHP version
+        if [ "$php_version" = "php74" ]; then
+            local port="${PHP_74_PORT}"
+        else
+            local port="${PHP_82_PORT}"
+        fi
+
+        echo -e "${GREEN}Access at:   ${NC}http://localhost:$port/$project_name/"
+        echo ""
+        echo -e "${GREEN}✓ Real-time editing enabled - changes reflect immediately${NC}"
+
+        return 0
     else
-        echo -e "${YELLOW}No symlink found at $target_dir${NC}"
+        # Remove from tracking file if mounting failed
+        if [ -f "$projects_file" ]; then
+            grep -v "^$php_version:$project_name:" "$projects_file" > "${projects_file}.tmp" && mv "${projects_file}.tmp" "$projects_file"
+        fi
+        echo -e "${RED}Error: Failed to mount project${NC}"
+        return 1
     fi
 }
 
-list_links() {
+restart_container_with_project() {
     local php_version="$1"
-    
-    if [ -z "$php_version" ]; then
-        echo -e "${BLUE}DevStack Project Links:${NC}"
-        echo ""
-        for version in php74 php82; do
-            echo -e "${YELLOW}$version:${NC}"
-            local www_dir="$SCRIPT_DIR/www/$version"
-            if [ -d "$www_dir" ]; then
-                local found_links=false
-                for item in "$www_dir"/*; do
-                    if [ -L "$item" ]; then
-                        local link_name=$(basename "$item")
-                        local target=$(readlink "$item")
-                        echo -e "  ${GREEN}$link_name${NC} -> $target"
-                        found_links=true
-                    fi
-                done
-                if [ "$found_links" = false ]; then
-                    echo -e "  ${YELLOW}No symlinks found${NC}"
-                fi
-            else
-                echo -e "  ${YELLOW}Directory not found${NC}"
-            fi
-            echo ""
-        done
+    local container_name
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+
+    if [ "$php_version" = "php74" ]; then
+        container_name="${PHP74_CONTAINER_NAME}"
     else
-        # Show links for specific PHP version
-        echo -e "${BLUE}Links for $php_version:${NC}"
-        local www_dir="$SCRIPT_DIR/www/$php_version"
-        if [ -d "$www_dir" ]; then
-            local found_links=false
-            for item in "$www_dir"/*; do
-                if [ -L "$item" ]; then
-                    local link_name=$(basename "$item")
-                    local target=$(readlink "$item")
-                    echo -e "  ${GREEN}$link_name${NC} -> $target"
-                    found_links=true
+        container_name="${PHP82_CONTAINER_NAME}"
+    fi
+
+    echo -e "${BLUE}Restarting $container_name with mounted projects...${NC}"
+
+    # Stop the container
+    docker stop "$container_name" >/dev/null 2>&1
+    docker rm "$container_name" >/dev/null 2>&1
+
+    # Build docker run command with all project mounts
+    local docker_cmd="docker run -d --name $container_name"
+    docker_cmd="$docker_cmd --network ${NETWORK_NAME}"
+
+    # Add main www directory mount
+    docker_cmd="$docker_cmd -v $SCRIPT_DIR/www/$php_version:/var/www/html"
+
+    # Add project mounts from tracking file
+    if [ -f "$projects_file" ]; then
+        while IFS=':' read -r version link_name project_path; do
+            if [ "$version" = "$php_version" ]; then
+                docker_cmd="$docker_cmd -v $project_path:/var/www/html/$link_name"
+            fi
+        done < "$projects_file"
+    fi
+
+    # Add port mapping
+    if [ "$php_version" = "php74" ]; then
+        docker_cmd="$docker_cmd -p ${PHP_74_PORT}:80"
+        docker_cmd="$docker_cmd devstack-php74:latest"
+    else
+        docker_cmd="$docker_cmd -p ${PHP_82_PORT}:80"
+        docker_cmd="$docker_cmd devstack-php82:latest"
+    fi
+
+    # Execute the docker run command
+    eval "$docker_cmd" >/dev/null 2>&1
+
+    # Wait for container to be ready
+    sleep 3
+
+    # Check if container is running
+    if docker ps | grep -q "$container_name"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+unmount_project() {
+    local php_version="$1"
+    local project_name="${2:-project}"
+
+    if [ -z "$php_version" ]; then
+        echo -e "${RED}Usage: devstack unmount <php_version> [project_name]${NC}"
+        return 1
+    fi
+
+    # Validate PHP version
+    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ]; then
+        echo -e "${RED}Error: PHP version must be 'php74' or 'php82'${NC}"
+        return 1
+    fi
+
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+
+    # Check if project exists in tracking file
+    if [ ! -f "$projects_file" ] || ! grep -q "^$php_version:$project_name:" "$projects_file"; then
+        echo -e "${YELLOW}No mounted project found: $project_name in $php_version${NC}"
+        return 1
+    fi
+
+    echo -e "${BLUE}Unmounting project $project_name from $php_version...${NC}"
+
+    # Remove from tracking file
+    grep -v "^$php_version:$project_name:" "$projects_file" > "${projects_file}.tmp" || true
+    mv "${projects_file}.tmp" "$projects_file"
+    echo -e "${YELLOW}Removed from tracking file${NC}"
+
+    # Restart container without the mount
+    restart_container_with_project "$php_version"
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Project unmounted successfully!${NC}"
+        echo -e "${BLUE}Removed:${NC} $project_name from $php_version"
+    else
+        echo -e "${RED}Error: Failed to unmount project${NC}"
+        return 1
+    fi
+}
+
+list_projects() {
+    local php_version="$1"
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+
+    if [ -z "$php_version" ]; then
+        echo -e "${BLUE}DevStack Mounted Projects:${NC}"
+        echo ""
+
+        # Show mounted projects from tracking file
+        if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
+            for version in php74 php82; do
+                echo -e "${YELLOW}$version:${NC}"
+                local found_projects=false
+
+                while IFS=':' read -r file_version project_name project_path; do
+                    if [ "$file_version" = "$version" ]; then
+                        echo -e "  ${GREEN}$project_name${NC} -> $project_path"
+                        found_projects=true
+                    fi
+                done < "$projects_file"
+
+                if [ "$found_projects" = false ]; then
+                    echo -e "  ${YELLOW}No mounted projects${NC}"
                 fi
+                echo ""
             done
-            if [ "$found_links" = false ]; then
-                echo -e "  ${YELLOW}No symlinks found${NC}"
+        else
+            echo -e "${YELLOW}No mounted projects found${NC}"
+        fi
+    else
+        # Show projects for specific PHP version
+        echo -e "${BLUE}Mounted projects for $php_version:${NC}"
+
+        if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
+            local found_projects=false
+
+            while IFS=':' read -r file_version project_name project_path; do
+                if [ "$file_version" = "$php_version" ]; then
+                    echo -e "  ${GREEN}$project_name${NC} -> $project_path"
+                    found_projects=true
+                fi
+            done < "$projects_file"
+
+            if [ "$found_projects" = false ]; then
+                echo -e "  ${YELLOW}No mounted projects${NC}"
             fi
         else
-            echo -e "  ${YELLOW}Directory not found${NC}"
+            echo -e "  ${YELLOW}No mounted projects${NC}"
         fi
     fi
 }
@@ -321,14 +403,14 @@ case ${1:-help} in
     info)
         show_info
         ;;
-    link)
-        link_project "$2" "$3" "$4"
+    mount)
+        mount_project "$2" "$3" "$4"
         ;;
-    unlink)
-        unlink_project "$2" "$3"
+    unmount)
+        unmount_project "$2" "$3"
         ;;
-    links)
-        list_links "$2"
+    mounts)
+        list_projects "$2"
         ;;
     help|*)
         print_help
