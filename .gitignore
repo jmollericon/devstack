@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# DevStack project tracking (user-specific)
+.devstack_projects
+
 # MySQL data directory
 mysql/
 
