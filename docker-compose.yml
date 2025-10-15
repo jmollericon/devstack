@@ -5,7 +5,7 @@ services:
     image: mysql:5.7.44
     restart: always
     volumes:
-      - ./mysql:/var/lib/mysql
+      - ./mysql/5.7.44:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_PASSWORD: root
@@ -18,6 +18,7 @@ services:
     container_name: phpmyamin
     platform: linux/x86_64
     image: phpmyadmin/phpmyadmin
+    restart: always
     links:
       - database
     ports:
@@ -27,15 +28,29 @@ services:
     networks:
       - network
 
-  server:
-    container_name: 'apache-php7.4'
+  php74:
+    container_name: "apache-php7.4"
     build:
-      context: ./www
+      context: ./www/php74
       dockerfile: Dockerfile
     volumes:
-      - ./www:/var/www/html:rw
+      - ./www/php74:/var/www/html
     ports:
-      - 80:80
+      - 8074:80
+    links:
+      - database
+    networks:
+      - network
+
+  php82:
+    container_name: "apache-php8.2"
+    build:
+      context: ./www/php82
+      dockerfile: Dockerfile
+    volumes:
+      - ./www/php82:/var/www/html
+    ports:
+      - 8082:80
     links:
       - database
     networks:
