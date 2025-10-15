@@ -211,6 +211,38 @@ show_info() {
     echo -e "${BLUE}MySQL Host:${NC}      localhost:${MYSQL_57_PORT}"
     echo -e "${BLUE}MySQL User:${NC}      ${MYSQL_57_USER}"
     echo -e "${BLUE}MySQL Database:${NC}  ${MYSQL_57_DATABASE}"
+
+    # Show mounted projects information
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+    if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
+        echo ""
+        echo -e "${GREEN}=== Mounted Projects ===${NC}"
+
+        # Show PHP 7.4 projects
+        local found_php74=false
+        while IFS=':' read -r version project_name source_path; do
+            if [ "$version" = "php74" ]; then
+                if [ "$found_php74" = false ]; then
+                    echo -e "${BLUE}PHP 7.4 Projects:${NC}"
+                    found_php74=true
+                fi
+                echo -e "  ${YELLOW}$project_name${NC} -> http://localhost:${PHP_74_PORT}/$project_name/"
+            fi
+        done < "$projects_file"
+
+        # Show PHP 8.2 projects
+        local found_php82=false
+        while IFS=':' read -r version project_name source_path; do
+            if [ "$version" = "php82" ]; then
+                if [ "$found_php82" = false ]; then
+                    echo -e "${BLUE}PHP 8.2 Projects:${NC}"
+                    found_php82=true
+                fi
+                echo -e "  ${YELLOW}$project_name${NC} -> http://localhost:${PHP_82_PORT}/$project_name/"
+            fi
+        done < "$projects_file"
+    fi
+
     echo ""
 }
 
