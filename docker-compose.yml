@@ -23,7 +23,7 @@ services:
   phpmyadmin:
     container_name: ${PHPMYADMIN_CONTAINER_NAME}
     platform: linux/x86_64
-    image: phpmyadmin/phpmyadmin:latest
+    image: phpmyadmin/phpmyadmin
     restart: unless-stopped
     depends_on:
       database:
