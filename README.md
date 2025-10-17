@@ -69,6 +69,7 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
 ./devstack.sh logs        # View logs from all services
 ./devstack.sh status      # Show status of services
 ./devstack.sh clean       # Clean everything (DESTRUCTIVE)
+./devstack.sh clearcache  # Clear PHP opcache for development
 ./devstack.sh php74       # Access PHP 7.4 container
 ./devstack.sh php82       # Access PHP 8.2 container
 ./devstack.sh mysql       # Access MySQL shell
@@ -88,6 +89,7 @@ devstack build           # Rebuild and start services
 devstack logs            # View logs from all services
 devstack status          # Show status of services
 devstack clean           # Clean everything (DESTRUCTIVE)
+devstack clearcache      # Clear PHP opcache for development
 devstack php74           # Access PHP 7.4 container
 devstack php82           # Access PHP 8.2 container
 devstack mysql           # Access MySQL shell
@@ -223,28 +225,100 @@ DevStack now provides a comprehensive status overview showing both services and 
 
 ```bash
 # When you run: devstack info
-╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-║ DevStack Service Information                                                                                       ║
-╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+=== DevStack Information ===
+PHP 7.4 Web:     http://localhost:8074
+PHP 8.2 Web:     http://localhost:8082
+phpMyAdmin:      http://localhost:8080
+MySQL Host:      localhost:3306
+MySQL User:      devstack
+MySQL Database:  devstack
 
-🐘 PHP 7.4     → http://localhost:8074/
-🐘 PHP 8.2     → http://localhost:8082/
-🗄️  MySQL 5.7  → localhost:3306 (root/root)
-🌐 phpMyAdmin  → http://localhost:8080/
+=== Mounted Projects ===
+PHP 7.4 Projects:
+  wp → http://localhost:8074/wp/
+    📁 Source: /Users/user/Sites/wordpress-site
+  laravel-app → http://localhost:8074/laravel-app/
+    📁 Source: /Users/user/Code/laravel-project
 
-📁 Mounted Projects:
-   → wp (PHP 7.4): http://localhost:8074/wp/
-   → api (PHP 8.2): http://localhost:8082/api/
-   → shop (PHP 8.2): http://localhost:8082/shop/
-
-🔧 Container Status:
-   ✅ devstack-php74 → running
-   ✅ devstack-php82 → running
-   ✅ devstack-mysql57 → running
-   ✅ devstack-phpmyadmin → running
+PHP 8.2 Projects:
+  api → http://localhost:8082/api/
+    📁 Source: /Users/user/Code/api-project
+  shop → http://localhost:8082/shop/
+    📁 Source: /Users/user/Code/ecommerce
 ```
 
-## 🔧 Configuration
+### Enhanced Project Listing
+
+```bash
+# List all mounted projects: devstack mounts
+DevStack Mounted Projects:
+
+php74:
+  wp → http://localhost:8074/wp/
+    📁 Source: /Users/user/Sites/wordpress-site
+  laravel-app → http://localhost:8074/laravel-app/
+    📁 Source: /Users/user/Code/laravel-project
+
+php82:
+  api → http://localhost:8082/api/
+    📁 Source: /Users/user/Code/api-project
+```
+
+## � Development Optimizations
+
+### Real-time Change Detection
+
+DevStack is optimized for development with instant change detection:
+
+**OpCache Configuration:**
+
+- `opcache.revalidate_freq = 0` - Files are checked immediately for changes
+- `opcache.validate_timestamps = 1` - Timestamp validation enabled
+- Applied to both PHP 7.4 and PHP 8.2 containers
+
+**Clear Cache When Needed:**
+
+```bash
+# Clear PHP opcache for all containers
+devstack clearcache
+
+# This will:
+# ✅ Clear PHP 7.4 opcache
+# ✅ Clear PHP 8.2 opcache
+# ✅ Provide browser cache tips
+```
+
+### Troubleshooting Slow Changes
+
+If changes aren't reflecting immediately:
+
+1. **Use the cache clear command:**
+
+   ```bash
+   devstack clearcache
+   ```
+
+2. **Force browser refresh:**
+
+   - **Windows/Linux**: `Ctrl + F5`
+   - **Mac**: `Cmd + Shift + R`
+   - **Or enable "Disable cache" in browser dev tools (F12)**
+
+3. **For Laravel projects**, also clear application cache:
+   ```bash
+   devstack php74  # or php82
+   php artisan cache:clear
+   php artisan config:clear
+   php artisan view:clear
+   ```
+
+### Performance Tips
+
+- **Development mode**: OpCache is optimized for immediate change detection
+- **Real-time editing**: All mounted projects support live editing
+- **No file duplication**: Changes in your IDE reflect instantly in containers
+
+## �🔧 Configuration
 
 ### Environment variables (`.env`)
 
@@ -488,6 +562,7 @@ _devstack_completion() {
         'logs:View logs from all services'
         'status:Show status of services'
         'clean:Clean everything (DESTRUCTIVE)'
+        'clearcache:Clear PHP opcache for development'
         'php74:Access PHP 7.4 container'
         'php82:Access PHP 8.2 container'
         'mysql:Access MySQL shell'
@@ -551,6 +626,7 @@ _devstack_completion() {
         'logs:View logs from all services'
         'status:Show status of services'
         'clean:Clean everything (DESTRUCTIVE)'
+        'clearcache:Clear PHP opcache for development'
         'php74:Access PHP 7.4 container'
         'php82:Access PHP 8.2 container'
         'mysql:Access MySQL shell'
@@ -578,6 +654,43 @@ export DEVSTACK_PHP82_PORT="8082"
 # export DEVSTACK_DIR="$HOME/devstack"
 # export DEVSTACK_DIR="$HOME/Projects/devstack"
 ```
+
+## 🆕 Recent Improvements
+
+### v2.0 - Enhanced Development Experience
+
+**🚀 Performance Optimizations:**
+
+- **Instant change detection**: OpCache optimized with `revalidate_freq = 0`
+- **Real-time file monitoring**: Changes reflect immediately in browser
+- **New `clearcache` command**: Clear PHP opcache when needed
+
+**📁 Enhanced Project Management:**
+
+- **Improved project listing**: Shows both URL and source path
+- **Optimized restart logic**: Bulk container restarts instead of individual
+- **Better information display**: Cleaner, more readable project information
+- **Smart path formatting**: Compact display with full source paths
+
+**🔧 Developer Experience:**
+
+- **Updated documentation**: Comprehensive troubleshooting guides
+- **Enhanced autocompletion**: Includes all new commands
+- **Better error messages**: Clear guidance for common issues
+- **Performance tips**: Best practices for development workflow
+
+**🔄 System Improvements:**
+
+- **Consistent container management**: All operations use docker-compose
+- **Automatic project persistence**: Projects survive stop/start cycles
+- **Bulk operations**: Multiple containers handled efficiently
+- **Enhanced logging**: Better feedback during operations
+
+### Migration Notes
+
+**Existing projects**: No migration needed - all projects remain functional
+**Configuration**: OpCache automatically optimized for development
+**New features**: Use `devstack clearcache` if experiencing cache issues
 
 ## License
 

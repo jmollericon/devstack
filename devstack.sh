@@ -39,6 +39,7 @@ print_help() {
     echo "  logs                            Show logs from all services"
     echo "  status                          Show status of all services"
     echo "  clean                           Remove all containers and volumes (DESTRUCTIVE)"
+    echo "  clearcache                      Clear PHP opcache for development"
     echo "  mount <path> <php> [name]       Mount project with bind mount"
     echo "  unmount <php> [name]            Unmount project"
     echo "  mounts [php]                    List all mounted projects"
@@ -186,6 +187,30 @@ clean_everything() {
     else
         echo -e "${BLUE}Cleanup cancelled.${NC}"
     fi
+}
+
+clear_opcache() {
+    echo -e "${BLUE}Clearing PHP OpCache...${NC}"
+    
+    # Clear PHP 7.4 opcache
+    if docker ps --format "table {{.Names}}" | grep -q "${PHP74_CONTAINER_NAME}"; then
+        echo -e "${YELLOW}Clearing PHP 7.4 opcache...${NC}"
+        docker exec ${PHP74_CONTAINER_NAME} php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'PHP 7.4 OpCache cleared successfully!' . PHP_EOL; } else { echo 'OpCache not available in PHP 7.4' . PHP_EOL; }"
+    else
+        echo -e "${YELLOW}PHP 7.4 container not running${NC}"
+    fi
+    
+    # Clear PHP 8.2 opcache
+    if docker ps --format "table {{.Names}}" | grep -q "${PHP82_CONTAINER_NAME}"; then
+        echo -e "${YELLOW}Clearing PHP 8.2 opcache...${NC}"
+        docker exec ${PHP82_CONTAINER_NAME} php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'PHP 8.2 OpCache cleared successfully!' . PHP_EOL; } else { echo 'OpCache not available in PHP 8.2' . PHP_EOL; }"
+    else
+        echo -e "${YELLOW}PHP 8.2 container not running${NC}"
+    fi
+    
+    echo -e "${GREEN}OpCache clearing completed!${NC}"
+    echo -e "${CYAN}Tip: With the optimized configuration, changes should now reflect immediately.${NC}"
+    echo -e "${CYAN}If you still see caching issues, try refreshing your browser with Ctrl+F5 or Cmd+Shift+R${NC}"
 }
 
 access_php74() {
@@ -586,6 +611,9 @@ case ${1:-help} in
         ;;
     clean)
         clean_everything
+        ;;
+    clearcache)
+        clear_opcache
         ;;
     php74)
         access_php74
