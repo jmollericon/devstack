@@ -1,13 +1,16 @@
 # DevStack - Development Environment
 
-A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin using Docker Compose.
+A complete development stack with PHP 7.4, PHP 8.2, PHP 8.5, MySQL 5.7, PostgreSQL 16 and administration tools using Docker Compose.
 
 ## 🚀 Features
 
 - **PHP 7.4** with Apache, Xdebug 3.1.6, Redis, ImageMagick
 - **PHP 8.2** with Apache, Xdebug 3.3.2, Redis, ImageMagick
+- **PHP 8.5** with Apache, Xdebug 3.4.0, Redis, ImageMagick
 - **MySQL 5.7.44** with data persistence
-- **phpMyAdmin** for database administration
+- **PostgreSQL 16** with data persistence
+- **phpMyAdmin** for MySQL database administration
+- **pgAdmin 4** for PostgreSQL database administration
 - **Optimized configuration** for development
 - **Environment variables** for easy customization
 - **Management script** for common commands
@@ -37,10 +40,11 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
    ```
 
 3. **Access the services:**
-
    - PHP 7.4: http://localhost:8074
    - PHP 8.2: http://localhost:8082
+   - PHP 8.5: http://localhost:8085
    - phpMyAdmin: http://localhost:8080
+   - pgAdmin: http://localhost:5050
 
 4. **Configure global alias (optional but recommended):**
 
@@ -72,7 +76,9 @@ A complete development stack with PHP 7.4, PHP 8.2, MySQL 5.7 and phpMyAdmin usi
 ./devstack.sh clearcache  # Clear PHP opcache for development
 ./devstack.sh php74       # Access PHP 7.4 container
 ./devstack.sh php82       # Access PHP 8.2 container
+./devstack.sh php85       # Access PHP 8.5 container
 ./devstack.sh mysql       # Access MySQL shell
+./devstack.sh postgres    # Access PostgreSQL shell
 ./devstack.sh info        # Show service information
 ./devstack.sh mount       # Mount external project
 ./devstack.sh unmount     # Unmount project
@@ -92,7 +98,9 @@ devstack clean           # Clean everything (DESTRUCTIVE)
 devstack clearcache      # Clear PHP opcache for development
 devstack php74           # Access PHP 7.4 container
 devstack php82           # Access PHP 8.2 container
+devstack php85           # Access PHP 8.5 container
 devstack mysql           # Access MySQL shell
+devstack postgres        # Access PostgreSQL shell
 devstack info            # Show service information
 devstack mount           # Mount external project
 devstack unmount         # Unmount project
@@ -162,8 +170,8 @@ docker-compose ps         # View container status
 You can easily mount external projects using Docker bind mounts in your DevStack environment:
 
 ```bash
-# Mount current directory as "project" in PHP 8.2
-devstack mount . php82
+# Mount current directory as "project" in PHP 8.5
+devstack mount . php85
 
 # Mount specific project with custom name
 devstack mount ~/Projects/my-app php74 myapp
@@ -194,6 +202,7 @@ devstack unmount php74 myapp
 
 - PHP 7.4: `http://localhost:8074/project-name/`
 - PHP 8.2: `http://localhost:8082/project-name/`
+- PHP 8.5: `http://localhost:8085/project-name/`
 - If no name is provided, "project" is used as default
 
 **Persistence across sessions:**
@@ -228,8 +237,11 @@ DevStack now provides a comprehensive status overview showing both services and 
 === DevStack Information ===
 PHP 7.4 Web:     http://localhost:8074
 PHP 8.2 Web:     http://localhost:8082
+PHP 8.5 Web:     http://localhost:8085
 phpMyAdmin:      http://localhost:8080
+pgAdmin:         http://localhost:5050
 MySQL Host:      localhost:3306
+PostgreSQL Host: localhost:5432
 MySQL User:      devstack
 MySQL Database:  devstack
 
@@ -299,7 +311,6 @@ If changes aren't reflecting immediately:
    ```
 
 2. **Force browser refresh:**
-
    - **Windows/Linux**: `Ctrl + F5`
    - **Mac**: `Cmd + Shift + R`
    - **Or enable "Disable cache" in browser dev tools (F12)**
@@ -322,16 +333,24 @@ If changes aren't reflecting immediately:
 
 ### Environment variables (`.env`)
 
-| Variable                 | Description         | Default value |
-| ------------------------ | ------------------- | ------------- |
-| `MYSQL_57_PORT`          | MySQL 5.7 port      | `3306`        |
-| `PHP_74_PORT`            | PHP 7.4 port        | `8074`        |
-| `PHP_82_PORT`            | PHP 8.2 port        | `8082`        |
-| `PHPMYADMIN_PORT`        | phpMyAdmin port     | `8080`        |
-| `MYSQL_57_ROOT_PASSWORD` | MySQL root password | `root`        |
-| `MYSQL_57_DATABASE`      | Default database    | `devstack`    |
-| `MYSQL_57_USER`          | MySQL user          | `devstack`    |
-| `MYSQL_57_PASSWORD`      | User password       | `root`        |
+| Variable                   | Description            | Default value          |
+| -------------------------- | ---------------------- | ---------------------- |
+| `MYSQL_57_PORT`            | MySQL 5.7 port         | `3306`                 |
+| `POSTGRES_PORT`            | PostgreSQL 16 port     | `5432`                 |
+| `PHP_74_PORT`              | PHP 7.4 port           | `8074`                 |
+| `PHP_82_PORT`              | PHP 8.2 port           | `8082`                 |
+| `PHP_85_PORT`              | PHP 8.5 port           | `8085`                 |
+| `PHPMYADMIN_PORT`          | phpMyAdmin port        | `8080`                 |
+| `PGADMIN_PORT`             | pgAdmin port           | `5050`                 |
+| `MYSQL_57_ROOT_PASSWORD`   | MySQL root password    | `root`                 |
+| `MYSQL_57_DATABASE`        | MySQL default database | `devstack`             |
+| `MYSQL_57_USER`            | MySQL user             | `devstack`             |
+| `MYSQL_57_PASSWORD`        | MySQL user password    | `root`                 |
+| `POSTGRES_PASSWORD`        | PostgreSQL password    | `postgres`             |
+| `POSTGRES_USER`            | PostgreSQL user        | `postgres`             |
+| `POSTGRES_DB`              | PostgreSQL database    | `devstack`             |
+| `PGADMIN_DEFAULT_EMAIL`    | pgAdmin login email    | `admin@devstack.local` |
+| `PGADMIN_DEFAULT_PASSWORD` | pgAdmin login password | `admin`                |
 
 ### Advanced Alias Configuration
 
