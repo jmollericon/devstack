@@ -107,6 +107,84 @@ devstack unmount         # Unmount project
 devstack mounts          # List mounted projects
 ```
 
+## 🔄 Applying Configuration Changes
+
+If you modify DevStack configuration files, you need to rebuild the affected containers to apply the changes.
+
+### When to Rebuild
+
+Rebuild is required when you modify:
+
+- **Dockerfile** (PHP versions, extensions, system packages)
+- **php.ini** (PHP configuration)
+- **docker-compose.yml** (service definitions, ports, volumes)
+- **.env** (environment variables that affect container build)
+
+### How to Apply Changes
+
+#### Option 1: Rebuild All Services (Recommended)
+
+```bash
+# Using devstack script
+./devstack.sh build
+
+# Or with docker-compose directly
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+#### Option 2: Rebuild Specific Service
+
+```bash
+# Rebuild only PHP 8.5
+docker-compose build --no-cache php85
+docker-compose up -d php85
+
+# Rebuild only PHP 8.2
+docker-compose build --no-cache php82
+docker-compose up -d php82
+
+# Rebuild only PHP 7.4
+docker-compose build --no-cache php74
+docker-compose up -d php74
+```
+
+#### Option 3: Quick Restart (for .env changes only)
+
+```bash
+# If you only changed .env variables (ports, passwords, etc.)
+./devstack.sh restart
+
+# Or with docker-compose
+docker-compose down
+docker-compose up -d
+```
+
+### Important Notes
+
+- **Data persistence**: MySQL and PostgreSQL data is stored in `./mysql/` and `./postgres/` directories, so rebuilding won't delete your databases
+- **Mounted projects**: Your mounted projects will be automatically restored after rebuild
+- **No cache**: Use `--no-cache` flag to ensure a clean rebuild without using cached layers
+- **Logs**: Use `./devstack.sh logs` or `docker-compose logs -f` to monitor the rebuild process
+
+### Common Scenarios
+
+```bash
+# Modified Dockerfile to add new PHP extension
+docker-compose build --no-cache php85
+docker-compose up -d php85
+
+# Changed php.ini memory limit
+docker-compose restart php85
+
+# Modified docker-compose.yml ports
+docker-compose down
+docker-compose up -d
+
+# Added new service to docker-compose.yml
+docker-compose up -d
+```
+
 ### Configure Global Alias (Recommended)
 
 To use `devstack` from any directory without needing `./` and without being in the project directory:
