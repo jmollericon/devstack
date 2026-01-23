@@ -342,8 +342,8 @@ mount_project() {
     fi
 
     # Validate PHP version
-    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ] && [ "$php_version" != "php85" ]; then
-        echo -e "${RED}Error: PHP version must be 'php74', 'php82' or 'php85'${NC}"
+    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ] && [ "$php_version" != "php84" ]; then
+        echo -e "${RED}Error: PHP version must be 'php74', 'php82' or 'php84'${NC}"
         return 1
     fi
 
@@ -561,8 +561,8 @@ unmount_project() {
     fi
 
     # Validate PHP version
-    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ] && [ "$php_version" != "php85" ]; then
-        echo -e "${RED}Error: PHP version must be 'php74', 'php82' or 'php85'${NC}"
+    if [ "$php_version" != "php74" ] && [ "$php_version" != "php82" ] && [ "$php_version" != "php84" ]; then
+        echo -e "${RED}Error: PHP version must be 'php74', 'php82' or 'php84'${NC}"
         return 1
     fi
 
