@@ -121,16 +121,16 @@ services:
     networks:
       - network
 
-  php85:
-    container_name: ${PHP85_CONTAINER_NAME}
+  php84:
+    container_name: ${PHP84_CONTAINER_NAME}
     build:
-      context: ./www/php85
+      context: ./www/php84
       dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
-      - ./www/php85:/var/www/html
+      - ./www/php84:/var/www/html
     ports:
-      - "${PHP_85_PORT}:80"
+      - "${PHP_84_PORT}:80"
     depends_on:
       database:
         condition: service_healthy

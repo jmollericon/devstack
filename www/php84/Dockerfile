@@ -1,4 +1,4 @@
-FROM php:8.5-apache
+FROM php:8.4-apache
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -34,13 +34,12 @@ RUN apt-get update && apt-get upgrade -y && \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure and install PHP extensions
-RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-configure calendar && \
     docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         pdo_sqlite \
         mysqli \
-        curl \
         zip \
         intl \
         mbstring \
@@ -53,8 +52,8 @@ RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
 
 # Install PECL extensions
 RUN pecl install \
-        xdebug-3.4.0 \
-        redis-6.1.0 \
+        xdebug \
+        redis \
         imagick \
     && docker-php-ext-enable \
         xdebug \
