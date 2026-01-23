@@ -7,6 +7,9 @@
 # MySQL data directory
 mysql/
 
+# PostgreSQL data directory
+postgres/
+
 # Docker volumes and data
 volumes/
 data/
