@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DevStack Management Script
-# Simplified script for managing PHP 7.4, PHP 8.2, PHP 8.5, MySQL 5.7, PostgreSQL 16 and administration tools
+# Simplified script for managing PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreSQL 16 and administration tools
 # Usage: ./devstack.sh [command]
 
 set -e
@@ -45,13 +45,14 @@ print_help() {
     echo "  mounts [php]                    List all mounted projects"
     echo "  php74                           Access PHP 7.4 container shell"
     echo "  php82                           Access PHP 8.2 container shell"
+    echo "  php84                           Access PHP 8.4 container shell"
     echo "  mysql                           Access MySQL shell"
     echo "  info                            Show service URLs and information"
     echo "  help                            Show this help message"
     echo ""
     echo "Project Examples:"
     echo "  devstack mount . php74                    # Mount current dir as 'project'"
-    echo "  devstack mount ~/Projects/blog php85 blog # Mount with custom name"
+    echo "  devstack mount ~/Projects/blog php84 blog # Mount with custom name"
     echo "  devstack unmount php74 project           # Unmount project"
     echo "  devstack mounts                           # Show all mounted projects"
 }
@@ -208,12 +209,12 @@ clear_opcache() {
         echo -e "${YELLOW}PHP 8.2 container not running${NC}"
     fi
     
-    # Clear PHP 8.5 opcache
-    if docker ps --format "table {{.Names}}" | grep -q "${PHP85_CONTAINER_NAME}"; then
-        echo -e "${YELLOW}Clearing PHP 8.5 opcache...${NC}"
-        docker exec ${PHP85_CONTAINER_NAME} php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'PHP 8.5 OpCache cleared successfully!' . PHP_EOL; } else { echo 'OpCache not available in PHP 8.5' . PHP_EOL; }"
+    # Clear PHP 8.4 opcache
+    if docker ps --format "table {{.Names}}" | grep -q "${PHP84_CONTAINER_NAME}"; then
+        echo -e "${YELLOW}Clearing PHP 8.4 opcache...${NC}"
+        docker exec ${PHP84_CONTAINER_NAME} php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'PHP 8.4 OpCache cleared successfully!' . PHP_EOL; } else { echo 'OpCache not available in PHP 8.4' . PHP_EOL; }"
     else
-        echo -e "${YELLOW}PHP 8.5 container not running${NC}"
+        echo -e "${YELLOW}PHP 8.4 container not running${NC}"
     fi
     
     echo -e "${GREEN}OpCache clearing completed!${NC}"
@@ -231,9 +232,9 @@ access_php82() {
     docker exec -it ${PHP82_CONTAINER_NAME} bash
 }
 
-access_php85() {
-    echo -e "${BLUE}Accessing PHP 8.5 container...${NC}"
-    docker exec -it ${PHP85_CONTAINER_NAME} bash
+access_php84() {
+    echo -e "${BLUE}Accessing PHP 8.4 container...${NC}"
+    docker exec -it ${PHP84_CONTAINER_NAME} bash
 }
 
 access_mysql() {
@@ -251,7 +252,7 @@ show_info() {
     echo -e "${GREEN}=== DevStack Information ===${NC}"
     echo -e "${BLUE}PHP 7.4 Web:${NC}         http://localhost:${PHP_74_PORT}"
     echo -e "${BLUE}PHP 8.2 Web:${NC}         http://localhost:${PHP_82_PORT}"
-    echo -e "${BLUE}PHP 8.5 Web:${NC}         http://localhost:${PHP_85_PORT}"
+    echo -e "${BLUE}PHP 8.4 Web:${NC}         http://localhost:${PHP_84_PORT}"
     echo -e "${BLUE}phpMyAdmin:${NC}          http://localhost:${PHPMYADMIN_PORT}"
     echo -e "${BLUE}pgAdmin:${NC}             http://localhost:${PGADMIN_PORT}"
     echo -e "${BLUE}MySQL Host:${NC}          localhost:${MYSQL_57_PORT}"
@@ -291,27 +292,15 @@ show_info() {
             fi
         done < "$projects_file"
 
-        # Show PHP 8.5 projects
-        local found_php85=false
+        # Show PHP 8.4 projects
+        local found_php84=false
         while IFS=':' read -r version project_name source_path; do
-            if [ "$version" = "php85" ]; then
-                if [ "$found_php85" = false ]; then
-                    echo -e "${BLUE}PHP 8.5 Projects:${NC}"
-                    found_php85=true
+            if [ "$version" = "php84" ]; then
+                if [ "$found_php84" = false ]; then
+                    echo -e "${BLUE}PHP 8.4 Projects:${NC}"
+                    found_php84=true
                 fi
-                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_85_PORT}/$project_name/"
-                echo -e "    📁 Source: ${CYAN}$source_path${NC}"
-            fi
-        done < "$projects_file"
-        # Show PHP 8.5 projects
-        local found_php85=false
-        while IFS=':' read -r version project_name source_path; do
-            if [ "$version" = "php85" ]; then
-                if [ "$found_php85" = false ]; then
-                    echo -e "${BLUE}PHP 8.5 Projects:${NC}"
-                    found_php85=true
-                fi
-                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_85_PORT}/$project_name/"
+                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_84_PORT}/$project_name/"
                 echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
@@ -326,7 +315,7 @@ mount_project() {
     local project_name="${3:-project}"
 
     if [ -z "$project_path" ] || [ -z "$php_version" ]; then
-        echo -e "${RED}Usage: devstack mount <path> <php74|php82|php85> [name]${NC}"
+        echo -e "${RED}Usage: devstack mount <path> <php74|php82|php84> [name]${NC}"
         return 1
     fi
 
@@ -387,7 +376,7 @@ mount_project() {
         elif [ "$php_version" = "php82" ]; then
             local port="${PHP_82_PORT}"
         else
-            local port="${PHP_85_PORT}"
+            local port="${PHP_84_PORT}"
         fi
 
         echo -e "${GREEN}Access at:   ${NC}http://localhost:$port/$project_name/"
@@ -418,15 +407,15 @@ restart_all_containers_with_projects() {
     # Determine which PHP versions have projects
     local has_php74=false
     local has_php82=false
-    local has_php85=false
+    local has_php84=false
 
     while IFS=':' read -r version link_name source_path; do
         if [ "$version" = "php74" ]; then
             has_php74=true
         elif [ "$version" = "php82" ]; then
             has_php82=true
-        elif [ "$version" = "php85" ]; then
-            has_php85=true
+        elif [ "$version" = "php84" ]; then
+            has_php84=true
         fi
     done < "$projects_file"
 
@@ -466,16 +455,16 @@ EOF
         done < "$projects_file"
     fi
 
-    # Configure PHP 8.5 if it has projects
-    if [ "$has_php85" = true ]; then
+    # Configure PHP 8.4 if it has projects
+    if [ "$has_php84" = true ]; then
         cat >> "$override_file" << EOF
-  php85:
+  php84:
     volumes:
-      - ./www/php85:/var/www/html
+      - ./www/php84:/var/www/html
 EOF
-        # Add all PHP 8.5 projects
+        # Add all PHP 8.4 projects
         while IFS=':' read -r version link_name source_path; do
-            if [ "$version" = "php85" ]; then
+            if [ "$version" = "php84" ]; then
                 echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
             fi
         done < "$projects_file"
@@ -485,7 +474,7 @@ EOF
     local services_to_restart=""
     [ "$has_php74" = true ] && services_to_restart="$services_to_restart php74"
     [ "$has_php82" = true ] && services_to_restart="$services_to_restart php82"
-    [ "$has_php85" = true ] && services_to_restart="$services_to_restart php85"
+    [ "$has_php84" = true ] && services_to_restart="$services_to_restart php84"
 
     if [ -n "$services_to_restart" ]; then
         echo -e "${BLUE}Stopping containers: $services_to_restart${NC}"
@@ -552,7 +541,7 @@ EOF
     elif [ "$php_version" = "php82" ]; then
         container_name="${PHP82_CONTAINER_NAME}"
     else
-        container_name="${PHP85_CONTAINER_NAME}"
+        container_name="${PHP84_CONTAINER_NAME}"
     fi
 
     if docker ps | grep -q "$container_name"; then
@@ -614,13 +603,13 @@ list_projects() {
 
         # Show mounted projects from tracking file
         if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
-            for version in php74 php82 php85; do
+            for version in php74 php82 php84; do
                 echo -e "${YELLOW}$version:${NC}"
                 local found_projects=false
 
                 while IFS=':' read -r file_version project_name source_path; do
                     if [ "$file_version" = "$version" ]; then
-                        local port=$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_85_PORT"))
+                        local port=$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_84_PORT"))
                         echo -e "  ${GREEN}$project_name${NC} → http://localhost:$port/$project_name/"
                         echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                         found_projects=true
@@ -644,7 +633,7 @@ list_projects() {
 
             while IFS=':' read -r file_version project_name source_path; do
                 if [ "$file_version" = "$php_version" ]; then
-                    local port=$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$php_version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_85_PORT"))
+                    local port=$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$php_version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_84_PORT"))
                     echo -e "  ${GREEN}$project_name${NC} → http://localhost:$port/$project_name/"
                     echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                     found_projects=true
@@ -692,8 +681,8 @@ case ${1:-help} in
     php82)
         access_php82
         ;;
-    php85)
-        access_php85
+    php84)
+        access_php84
         ;;
     mysql)
         access_mysql

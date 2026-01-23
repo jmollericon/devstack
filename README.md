@@ -1,12 +1,12 @@
 # DevStack - Development Environment
 
-A complete development stack with PHP 7.4, PHP 8.2, PHP 8.5, MySQL 5.7, PostgreSQL 16 and administration tools using Docker Compose.
+A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreSQL 16 and administration tools using Docker Compose.
 
 ## 🚀 Features
 
 - **PHP 7.4** with Apache, Xdebug 3.1.6, Redis, ImageMagick
 - **PHP 8.2** with Apache, Xdebug 3.3.2, Redis, ImageMagick
-- **PHP 8.5** with Apache, Xdebug 3.4.0, Redis, ImageMagick
+- **PHP 8.4** with Apache, Xdebug, Redis, ImageMagick
 - **MySQL 5.7.44** with data persistence
 - **PostgreSQL 16** with data persistence
 - **phpMyAdmin** for MySQL database administration
@@ -42,7 +42,7 @@ A complete development stack with PHP 7.4, PHP 8.2, PHP 8.5, MySQL 5.7, PostgreS
 3. **Access the services:**
    - PHP 7.4: http://localhost:8074
    - PHP 8.2: http://localhost:8082
-   - PHP 8.5: http://localhost:8085
+   - PHP 8.4: http://localhost:8084
    - phpMyAdmin: http://localhost:8080
    - pgAdmin: http://localhost:5050
 
@@ -76,7 +76,7 @@ A complete development stack with PHP 7.4, PHP 8.2, PHP 8.5, MySQL 5.7, PostgreS
 ./devstack.sh clearcache  # Clear PHP opcache for development
 ./devstack.sh php74       # Access PHP 7.4 container
 ./devstack.sh php82       # Access PHP 8.2 container
-./devstack.sh php85       # Access PHP 8.5 container
+./devstack.sh php84       # Access PHP 8.4 container
 ./devstack.sh mysql       # Access MySQL shell
 ./devstack.sh postgres    # Access PostgreSQL shell
 ./devstack.sh info        # Show service information
@@ -98,7 +98,7 @@ devstack clean           # Clean everything (DESTRUCTIVE)
 devstack clearcache      # Clear PHP opcache for development
 devstack php74           # Access PHP 7.4 container
 devstack php82           # Access PHP 8.2 container
-devstack php85           # Access PHP 8.5 container
+devstack php84           # Access PHP 8.4 container
 devstack mysql           # Access MySQL shell
 devstack postgres        # Access PostgreSQL shell
 devstack info            # Show service information
@@ -136,9 +136,9 @@ docker-compose up -d
 #### Option 2: Rebuild Specific Service
 
 ```bash
-# Rebuild only PHP 8.5
-docker-compose build --no-cache php85
-docker-compose up -d php85
+# Rebuild only PHP 8.4
+docker-compose build --no-cache php84
+docker-compose up -d php84
 
 # Rebuild only PHP 8.2
 docker-compose build --no-cache php82
@@ -171,11 +171,11 @@ docker-compose up -d
 
 ```bash
 # Modified Dockerfile to add new PHP extension
-docker-compose build --no-cache php85
-docker-compose up -d php85
+docker-compose build --no-cache php84
+docker-compose up -d php84
 
 # Changed php.ini memory limit
-docker-compose restart php85
+docker-compose restart php84
 
 # Modified docker-compose.yml ports
 docker-compose down
@@ -243,13 +243,90 @@ docker-compose ps         # View container status
 
 ## Project Management
 
+### Creating a New Project
+
+DevStack provides two ways to work with projects: creating them directly inside the container or mounting external projects.
+
+#### Option 1: Create Project Inside DevStack (Recommended)
+
+Projects created directly in the `www/phpXX/` directories are immediately accessible:
+
+```bash
+# 1. Navigate to the PHP version directory you want to use
+cd www/php84/
+
+# 2. Create your project directory
+mkdir my-new-project
+cd my-new-project
+
+# 3. Create your files
+echo "<?php phpinfo();" > index.php
+
+# 4. Access immediately at:
+# http://localhost:8084/my-new-project/
+```
+
+**Creating a Laravel project:**
+
+```bash
+# Access the PHP container
+devstack php84
+
+# Inside the container, navigate to the web root
+cd /var/www/html
+
+# Create a new Laravel project
+composer create-project laravel/laravel my-laravel-app
+
+# Exit the container
+exit
+
+# Access at: http://localhost:8084/my-laravel-app/public/
+```
+
+**Creating a WordPress project:**
+
+```bash
+# Inside www/php74/
+cd www/php74/
+mkdir my-wordpress
+cd my-wordpress
+
+# Download WordPress
+curl -O https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+mv wordpress/* .
+rm -rf wordpress latest.tar.gz
+
+# Access at: http://localhost:8074/my-wordpress/
+# Configure with database credentials from .env file
+```
+
+**Benefits of this approach:**
+
+- ✅ No mounting needed - instantly available
+- ✅ Persists across container restarts
+- ✅ Direct file access from your host machine
+- ✅ Works with any IDE or editor
+
+#### Option 2: Mount Existing External Project
+
+If you already have a project elsewhere on your computer, you can mount it:
+
+```bash
+# Mount an existing project
+devstack mount ~/Code/existing-project php84 myproject
+
+# Access at: http://localhost:8084/myproject/
+```
+
 ### Mounting External Projects
 
 You can easily mount external projects using Docker bind mounts in your DevStack environment:
 
 ```bash
-# Mount current directory as "project" in PHP 8.5
-devstack mount . php85
+# Mount current directory as "project" in PHP 8.4
+devstack mount . php84
 
 # Mount specific project with custom name
 devstack mount ~/Projects/my-app php74 myapp
@@ -280,7 +357,7 @@ devstack unmount php74 myapp
 
 - PHP 7.4: `http://localhost:8074/project-name/`
 - PHP 8.2: `http://localhost:8082/project-name/`
-- PHP 8.5: `http://localhost:8085/project-name/`
+- PHP 8.4: `http://localhost:8084/project-name/`
 - If no name is provided, "project" is used as default
 
 **Persistence across sessions:**
@@ -315,7 +392,7 @@ DevStack now provides a comprehensive status overview showing both services and 
 === DevStack Information ===
 PHP 7.4 Web:     http://localhost:8074
 PHP 8.2 Web:     http://localhost:8082
-PHP 8.5 Web:     http://localhost:8085
+PHP 8.4 Web:     http://localhost:8084
 phpMyAdmin:      http://localhost:8080
 pgAdmin:         http://localhost:5050
 MySQL Host:      localhost:3306
@@ -417,7 +494,7 @@ If changes aren't reflecting immediately:
 | `POSTGRES_PORT`            | PostgreSQL 16 port     | `5432`                 |
 | `PHP_74_PORT`              | PHP 7.4 port           | `8074`                 |
 | `PHP_82_PORT`              | PHP 8.2 port           | `8082`                 |
-| `PHP_85_PORT`              | PHP 8.5 port           | `8085`                 |
+| `PHP_84_PORT`              | PHP 8.4 port           | `8084`                 |
 | `PHPMYADMIN_PORT`          | phpMyAdmin port        | `8080`                 |
 | `PGADMIN_PORT`             | pgAdmin port           | `5050`                 |
 | `MYSQL_57_ROOT_PASSWORD`   | MySQL root password    | `root`                 |
