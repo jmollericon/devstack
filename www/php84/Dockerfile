@@ -31,6 +31,7 @@ RUN apt-get update && apt-get upgrade -y && \
         libjpeg62-turbo-dev \
         libpng-dev \
         libmagickwand-dev \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure and install PHP extensions
@@ -38,6 +39,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-configure calendar && \
     docker-php-ext-install -j$(nproc) \
         pdo_mysql \
+        pdo_pgsql \
+        pgsql \
         pdo_sqlite \
         mysqli \
         zip \
