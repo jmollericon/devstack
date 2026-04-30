@@ -63,3 +63,4 @@ composer.lock
 # Local development overrides
 docker-compose.override.yml
 docker-compose.local.yml
+docker-compose.override.tmp.yml
