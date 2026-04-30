@@ -33,9 +33,10 @@ All management goes through `devstack.sh` (or the `devstack` shell alias if conf
 
 **Project mounting:**
 ```bash
-./devstack.sh mount <path> <php-version> [name]   # Mount external project
-./devstack.sh unmount <php-version> [name]         # Remove mounted project
-./devstack.sh mounts [php-version]                 # List mounted projects
+./devstack.sh mount <path> <php-version> [name]          # Mount external project
+./devstack.sh mount <path> <php-version> [name] laravel  # Mount Laravel project (serves from public/)
+./devstack.sh unmount <php-version> [name]               # Remove mounted project
+./devstack.sh mounts [php-version]                       # List mounted projects
 ```
 
 ## Architecture
@@ -60,7 +61,9 @@ There are two kinds of projects:
 
 **Internal projects** — created inside `www/phpXX/` on the container volume. Accessible at `http://localhost:PORT/project-name/`. Persist across restarts automatically.
 
-**Mounted projects** — external directories bind-mounted into containers. Tracked in `.devstack_projects` (format: `php-version:project-name:source-path`). They are auto-remounted on `start`/`restart`. Accessible at `http://localhost:PORT/project-name/`.
+**Mounted projects** — external directories bind-mounted into containers. Tracked in `.devstack_projects` (format: `php-version:project-name:source-path:type`, where `type` is `laravel` or empty). They are auto-remounted on `start`/`restart`. Accessible at `http://localhost:PORT/project-name/`.
+
+**Laravel projects**: when mounted with the `laravel` type, devstack generates an Apache `Alias` directive (`/etc/apache2/conf-enabled/<name>-laravel.conf` inside the container) that maps `/<name>/` → `/<name>/public/`. This lets Laravel's `public/.htaccess` handle routing normally. Apache is reloaded automatically after writing the conf. Non-Laravel projects are unaffected.
 
 ### PHP Container Configuration
 
