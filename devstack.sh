@@ -40,21 +40,25 @@ print_help() {
     echo "  status                          Show status of all services"
     echo "  clean                           Remove all containers and volumes (DESTRUCTIVE)"
     echo "  clearcache                      Clear PHP opcache for development"
-    echo "  mount <path> <php> [name]       Mount project with bind mount"
-    echo "  unmount <php> [name]            Unmount project"
-    echo "  mounts [php]                    List all mounted projects"
-    echo "  php74                           Access PHP 7.4 container shell"
-    echo "  php82                           Access PHP 8.2 container shell"
-    echo "  php84                           Access PHP 8.4 container shell"
-    echo "  mysql                           Access MySQL shell"
-    echo "  info                            Show service URLs and information"
-    echo "  help                            Show this help message"
+    echo "  mount <path> <php> [name] [laravel [port]]  Mount project"
+    echo "                                               'laravel' serves from public/ (subdirectory)"
+    echo "                                               'laravel <port>' gives it a dedicated port (SPA/API apps)"
+    echo "  unmount <php> [name]                        Unmount project"
+    echo "  mounts [php]                                List all mounted projects"
+    echo "  php74                                       Access PHP 7.4 container shell"
+    echo "  php82                                       Access PHP 8.2 container shell"
+    echo "  php84                                       Access PHP 8.4 container shell"
+    echo "  mysql                                       Access MySQL shell"
+    echo "  info                                        Show service URLs and information"
+    echo "  help                                        Show this help message"
     echo ""
     echo "Project Examples:"
-    echo "  devstack mount . php74                    # Mount current dir as 'project'"
-    echo "  devstack mount ~/Projects/blog php84 blog # Mount with custom name"
-    echo "  devstack unmount php74 project           # Unmount project"
-    echo "  devstack mounts                           # Show all mounted projects"
+    echo "  devstack mount . php74                                   # Mount current dir"
+    echo "  devstack mount ~/Projects/blog php84 blog               # Mount with custom name"
+    echo "  devstack mount ~/Projects/laravel php74 app laravel     # Laravel: serve from public/ (subdirectory)"
+    echo "  devstack mount ~/Projects/laravel php74 app laravel 8076 # Laravel: dedicated port (SPA/API apps)"
+    echo "  devstack unmount php74 project                          # Unmount project"
+    echo "  devstack mounts                                         # Show all mounted projects"
 }
 
 # Function to detect and remount existing projects
@@ -64,9 +68,9 @@ detect_and_remount_projects() {
 
     if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
         echo -e "${BLUE}Detected mounted projects. Re-mounting...${NC}"
-        # Read all mounted projects into array
-        while IFS=':' read -r version link_name source_path; do
-            temp_projects+=("$version:$link_name:$source_path")
+        # Read all mounted projects into array (preserve all 4 fields including project_type)
+        while IFS=':' read -r version link_name source_path project_type; do
+            temp_projects+=("$version:$link_name:$source_path:$project_type")
             echo -e "${YELLOW}  Found: $link_name ($version) -> $source_path${NC}"
         done < "$projects_file"
 
@@ -81,10 +85,9 @@ detect_and_remount_projects() {
         if [ ${#temp_projects[@]} -gt 0 ]; then
             echo -e "${BLUE}Re-mounting all projects...${NC}"
 
-            # Restore the projects file first
+            # Restore the projects file first (preserve all 4 fields)
             for project_info in "${temp_projects[@]}"; do
-                IFS=':' read -r version link_name source_path <<< "$project_info"
-                echo "$version:$link_name:$source_path" >> "$projects_file"
+                echo "$project_info" >> "$projects_file"
             done
 
             # Restart all containers with projects at once
@@ -125,9 +128,9 @@ restart_services() {
 
     if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
         echo -e "${BLUE}Detected mounted projects. Saving configuration...${NC}"
-        # Read all mounted projects into array
-        while IFS=':' read -r version link_name source_path; do
-            temp_projects+=("$version:$link_name:$source_path")
+        # Read all mounted projects into array (preserve all 4 fields including project_type)
+        while IFS=':' read -r version link_name source_path project_type; do
+            temp_projects+=("$version:$link_name:$source_path:$project_type")
             echo -e "${YELLOW}  Found: $link_name ($version) -> $source_path${NC}"
         done < "$projects_file"
     fi
@@ -142,11 +145,10 @@ restart_services() {
 
     # Re-mount projects using the shared function
     if [ ${#temp_projects[@]} -gt 0 ]; then
-        # Restore the projects file first
+        # Restore the projects file first (preserve all 4 fields)
         > "$projects_file"
         for project_info in "${temp_projects[@]}"; do
-            IFS=':' read -r version link_name source_path <<< "$project_info"
-            echo "$version:$link_name:$source_path" >> "$projects_file"
+            echo "$project_info" >> "$projects_file"
         done
 
         # Use the shared remount function
@@ -222,6 +224,73 @@ clear_opcache() {
     echo -e "${CYAN}If you still see caching issues, try refreshing your browser with Ctrl+F5 or Cmd+Shift+R${NC}"
 }
 
+apply_laravel_apache_configs() {
+    local php_version="$1"
+    local container_name="$2"
+    local projects_file="$SCRIPT_DIR/.devstack_projects"
+
+    if [ ! -f "$projects_file" ] || [ ! -s "$projects_file" ]; then
+        return 0
+    fi
+
+    local applied=false
+    while IFS=':' read -r version link_name source_path project_type project_port; do
+        if [ "$version" = "$php_version" ] && [ "$project_type" = "laravel" ]; then
+            local conf
+            if [ -n "$project_port" ]; then
+                # Dedicated port: full VirtualHost — app runs at root (SPA/API apps)
+                echo -e "${BLUE}  Configuring dedicated port $project_port VirtualHost for Laravel: $link_name${NC}"
+                conf="Listen ${project_port}
+<VirtualHost *:${project_port}>
+    DocumentRoot /var/www/html/${link_name}/public
+
+    <Directory /var/www/html/${link_name}/public>
+        Options FollowSymLinks
+        AllowOverride None
+        Require all granted
+
+        RewriteEngine On
+
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteCond %{REQUEST_URI} (.+)/\$
+        RewriteRule ^ %1 [L,R=301]
+
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule ^ /index.php [L]
+    </Directory>
+</VirtualHost>"
+            else
+                # Subdirectory Alias — simple Laravel app served at /name/ prefix
+                echo -e "${BLUE}  Configuring Apache Alias for Laravel: $link_name${NC}"
+                conf="Alias /${link_name} /var/www/html/${link_name}/public
+<Directory /var/www/html/${link_name}/public>
+    Options FollowSymLinks MultiViews
+    AllowOverride None
+    Require all granted
+
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/\$
+    RewriteRule ^ %1 [L,R=301]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ /${link_name}/index.php [L]
+</Directory>"
+            fi
+            echo "$conf" | docker exec -i "$container_name" tee "/etc/apache2/conf-enabled/${link_name}-laravel.conf" > /dev/null
+            applied=true
+        fi
+    done < "$projects_file"
+
+    if [ "$applied" = true ]; then
+        docker exec "$container_name" apache2ctl graceful 2>/dev/null || true
+        echo -e "${GREEN}  Laravel Apache aliases applied${NC}"
+    fi
+}
+
 access_php74() {
     echo -e "${BLUE}Accessing PHP 7.4 container...${NC}"
     docker exec -it ${PHP74_CONTAINER_NAME} bash
@@ -266,41 +335,50 @@ show_info() {
         echo ""
         echo -e "${GREEN}=== Mounted Projects ===${NC}"
 
+        # Helper to print project URL line
+        _print_project_url() {
+            local pname="$1" ptype="$2" pport="$3" base_port="$4"
+            local type_badge="" url
+            if [ "$ptype" = "laravel" ]; then
+                if [ -n "$pport" ]; then
+                    type_badge=" ${GREEN}[Laravel:port]${NC}"
+                    url="http://localhost:${pport}/"
+                else
+                    type_badge=" ${GREEN}[Laravel]${NC}"
+                    url="http://localhost:${base_port}/${pname}/"
+                fi
+            else
+                url="http://localhost:${base_port}/${pname}/"
+            fi
+            echo -e "  ${YELLOW}${pname}${NC}${type_badge} → ${url}"
+        }
+
         # Show PHP 7.4 projects
         local found_php74=false
-        while IFS=':' read -r version project_name source_path; do
+        while IFS=':' read -r version project_name source_path project_type project_port; do
             if [ "$version" = "php74" ]; then
-                if [ "$found_php74" = false ]; then
-                    echo -e "${BLUE}PHP 7.4 Projects:${NC}"
-                    found_php74=true
-                fi
-                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_74_PORT}/$project_name/"
+                [ "$found_php74" = false ] && echo -e "${BLUE}PHP 7.4 Projects:${NC}" && found_php74=true
+                _print_project_url "$project_name" "$project_type" "$project_port" "${PHP_74_PORT}"
                 echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
 
         # Show PHP 8.2 projects
         local found_php82=false
-        while IFS=':' read -r version project_name source_path; do
+        while IFS=':' read -r version project_name source_path project_type project_port; do
             if [ "$version" = "php82" ]; then
-                if [ "$found_php82" = false ]; then
-                    echo -e "${BLUE}PHP 8.2 Projects:${NC}"
-                    found_php82=true
-                fi
-                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_82_PORT}/$project_name/"
+                [ "$found_php82" = false ] && echo -e "${BLUE}PHP 8.2 Projects:${NC}" && found_php82=true
+                _print_project_url "$project_name" "$project_type" "$project_port" "${PHP_82_PORT}"
                 echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
 
         # Show PHP 8.4 projects
         local found_php84=false
-        while IFS=':' read -r version project_name source_path; do
+        while IFS=':' read -r version project_name source_path project_type project_port; do
             if [ "$version" = "php84" ]; then
-                if [ "$found_php84" = false ]; then
-                    echo -e "${BLUE}PHP 8.4 Projects:${NC}"
-                    found_php84=true
-                fi
-                echo -e "  ${YELLOW}$project_name${NC} → http://localhost:${PHP_84_PORT}/$project_name/"
+                [ "$found_php84" = false ] && echo -e "${BLUE}PHP 8.4 Projects:${NC}" && found_php84=true
+                _print_project_url "$project_name" "$project_type" "$project_port" "${PHP_84_PORT}"
                 echo -e "    📁 Source: ${CYAN}$source_path${NC}"
             fi
         done < "$projects_file"
@@ -313,9 +391,11 @@ mount_project() {
     local project_path="$1"
     local php_version="$2"
     local project_name="${3:-project}"
+    local project_type="${4:-}"
+    local project_port="${5:-}"
 
     if [ -z "$project_path" ] || [ -z "$php_version" ]; then
-        echo -e "${RED}Usage: devstack mount <path> <php74|php82|php84> [name]${NC}"
+        echo -e "${RED}Usage: devstack mount <path> <php74|php82|php84> [name] [laravel [port]]${NC}"
         return 1
     fi
 
@@ -360,7 +440,7 @@ mount_project() {
     echo -e "${BLUE}Mounting project with Docker bind mount...${NC}"
 
     # Add project configuration to tracking file
-    echo "$php_version:$project_name:$project_path" >> "$projects_file"
+    echo "$php_version:$project_name:$project_path:$project_type:$project_port" >> "$projects_file"
 
     # Restart the specific container with the new mount
     restart_container_with_project "$php_version"
@@ -404,22 +484,32 @@ restart_all_containers_with_projects() {
 
     echo -e "${BLUE}Restarting all containers with mounted projects...${NC}"
 
-    # Determine which PHP versions have projects
-    local has_php74=false
-    local has_php82=false
-    local has_php84=false
+    # Determine which PHP versions have projects and collect dedicated ports
+    local has_php74=false has_php82=false has_php84=false
+    local ports_php74="" ports_php82="" ports_php84=""
 
-    while IFS=':' read -r version link_name source_path; do
+    while IFS=':' read -r version link_name source_path project_type project_port; do
         if [ "$version" = "php74" ]; then
             has_php74=true
+            [ -n "$project_port" ] && ports_php74="$ports_php74 $project_port"
         elif [ "$version" = "php82" ]; then
             has_php82=true
+            [ -n "$project_port" ] && ports_php82="$ports_php82 $project_port"
         elif [ "$version" = "php84" ]; then
             has_php84=true
+            [ -n "$project_port" ] && ports_php84="$ports_php84 $project_port"
         fi
     done < "$projects_file"
 
     cd "$SCRIPT_DIR"
+
+    # Helper to write port mappings for a service
+    _write_ports() {
+        local base_port="$1"; local extra="$2"; local f="$3"
+        echo "    ports:" >> "$f"
+        echo "      - \"${base_port}:80\"" >> "$f"
+        for p in $extra; do echo "      - \"${p}:${p}\"" >> "$f"; done
+    }
 
     # Create a comprehensive override file for all services that need projects
     local override_file="docker-compose.override.tmp.yml"
@@ -432,12 +522,10 @@ restart_all_containers_with_projects() {
     volumes:
       - ./www/php74:/var/www/html
 EOF
-        # Add all PHP 7.4 projects
-        while IFS=':' read -r version link_name source_path; do
-            if [ "$version" = "php74" ]; then
-                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
-            fi
+        while IFS=':' read -r version link_name source_path project_type project_port; do
+            [ "$version" = "php74" ] && echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
         done < "$projects_file"
+        [ -n "$ports_php74" ] && _write_ports "$PHP_74_PORT" "$ports_php74" "$override_file"
     fi
 
     # Configure PHP 8.2 if it has projects
@@ -447,12 +535,10 @@ EOF
     volumes:
       - ./www/php82:/var/www/html
 EOF
-        # Add all PHP 8.2 projects
-        while IFS=':' read -r version link_name source_path; do
-            if [ "$version" = "php82" ]; then
-                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
-            fi
+        while IFS=':' read -r version link_name source_path project_type project_port; do
+            [ "$version" = "php82" ] && echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
         done < "$projects_file"
+        [ -n "$ports_php82" ] && _write_ports "$PHP_82_PORT" "$ports_php82" "$override_file"
     fi
 
     # Configure PHP 8.4 if it has projects
@@ -462,12 +548,10 @@ EOF
     volumes:
       - ./www/php84:/var/www/html
 EOF
-        # Add all PHP 8.4 projects
-        while IFS=':' read -r version link_name source_path; do
-            if [ "$version" = "php84" ]; then
-                echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
-            fi
+        while IFS=':' read -r version link_name source_path project_type project_port; do
+            [ "$version" = "php84" ] && echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
         done < "$projects_file"
+        [ -n "$ports_php84" ] && _write_ports "$PHP_84_PORT" "$ports_php84" "$override_file"
     fi
 
     # Stop and restart all containers with projects at once
@@ -486,6 +570,11 @@ EOF
 
         # Wait for containers to be ready
         sleep 3
+
+        # Apply Apache Alias configs for Laravel projects in each container
+        [ "$has_php74" = true ] && apply_laravel_apache_configs "php74" "${PHP74_CONTAINER_NAME}"
+        [ "$has_php82" = true ] && apply_laravel_apache_configs "php82" "${PHP82_CONTAINER_NAME}"
+        [ "$has_php84" = true ] && apply_laravel_apache_configs "php84" "${PHP84_CONTAINER_NAME}"
     fi
 
     # Clean up the temporary override file
@@ -507,7 +596,7 @@ restart_container_with_project() {
     docker-compose stop "$service_name"
     docker-compose rm -f "$service_name"
 
-    # Create a temporary docker-compose override for this service with additional volumes
+    # Create a temporary docker-compose override for this service with additional volumes and ports
     local override_file="docker-compose.override.tmp.yml"
     cat > "$override_file" << EOF
 services:
@@ -516,13 +605,31 @@ services:
       - ./www/$php_version:/var/www/html
 EOF
 
-    # Add project volumes from tracking file
+    # Add project volumes and collect dedicated ports from tracking file
+    local extra_ports=""
     if [ -f "$projects_file" ]; then
-        while IFS=':' read -r version link_name source_path; do
+        while IFS=':' read -r version link_name source_path project_type project_port; do
             if [ "$version" = "$php_version" ]; then
                 echo "      - \"$source_path:/var/www/html/$link_name\"" >> "$override_file"
+                [ -n "$project_port" ] && extra_ports="$extra_ports $project_port"
             fi
         done < "$projects_file"
+    fi
+
+    # Add dedicated port mappings if any Laravel projects need them
+    if [ -n "$extra_ports" ]; then
+        echo "    ports:" >> "$override_file"
+        # Get the base port for this PHP version from the default docker-compose
+        if [ "$php_version" = "php74" ]; then
+            echo "      - \"${PHP_74_PORT}:80\"" >> "$override_file"
+        elif [ "$php_version" = "php82" ]; then
+            echo "      - \"${PHP_82_PORT}:80\"" >> "$override_file"
+        else
+            echo "      - \"${PHP_84_PORT}:80\"" >> "$override_file"
+        fi
+        for port in $extra_ports; do
+            echo "      - \"${port}:${port}\"" >> "$override_file"
+        done
     fi
 
     # Start the service with the override
@@ -543,6 +650,9 @@ EOF
     else
         container_name="${PHP84_CONTAINER_NAME}"
     fi
+
+    # Apply Apache Alias configs for any Laravel projects
+    apply_laravel_apache_configs "$php_version" "$container_name"
 
     if docker ps | grep -q "$container_name"; then
         return 0
@@ -607,10 +717,12 @@ list_projects() {
                 echo -e "${YELLOW}$version:${NC}"
                 local found_projects=false
 
-                while IFS=':' read -r file_version project_name source_path; do
+                while IFS=':' read -r file_version project_name source_path project_type; do
                     if [ "$file_version" = "$version" ]; then
                         local port=$([ "$version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_84_PORT"))
-                        echo -e "  ${GREEN}$project_name${NC} → http://localhost:$port/$project_name/"
+                        local type_badge=""
+                        [ "$project_type" = "laravel" ] && type_badge=" ${GREEN}[Laravel]${NC}"
+                        echo -e "  ${GREEN}$project_name${NC}${type_badge} → http://localhost:$port/$project_name/"
                         echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                         found_projects=true
                     fi
@@ -631,10 +743,12 @@ list_projects() {
         if [ -f "$projects_file" ] && [ -s "$projects_file" ]; then
             local found_projects=false
 
-            while IFS=':' read -r file_version project_name source_path; do
+            while IFS=':' read -r file_version project_name source_path project_type; do
                 if [ "$file_version" = "$php_version" ]; then
                     local port=$([ "$php_version" = "php74" ] && echo "$PHP_74_PORT" || ([ "$php_version" = "php82" ] && echo "$PHP_82_PORT" || echo "$PHP_84_PORT"))
-                    echo -e "  ${GREEN}$project_name${NC} → http://localhost:$port/$project_name/"
+                    local type_badge=""
+                    [ "$project_type" = "laravel" ] && type_badge=" ${GREEN}[Laravel]${NC}"
+                    echo -e "  ${GREEN}$project_name${NC}${type_badge} → http://localhost:$port/$project_name/"
                     echo -e "    📁 Source: ${CYAN}$source_path${NC}"
                     found_projects=true
                 fi
@@ -694,7 +808,7 @@ case ${1:-help} in
         show_info
         ;;
     mount)
-        mount_project "$2" "$3" "$4"
+        mount_project "$2" "$3" "$4" "$5" "$6"
         ;;
     unmount)
         unmount_project "$2" "$3"
