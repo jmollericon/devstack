@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DevStack Management Script
-# Simplified script for managing PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreSQL 16 and administration tools
+# Simplified script for managing PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, MySQL 8, PostgreSQL 16 and administration tools
 # Usage: ./devstack.sh [command]
 
 set -e
@@ -48,7 +48,8 @@ print_help() {
     echo "  php74                                       Access PHP 7.4 container shell"
     echo "  php82                                       Access PHP 8.2 container shell"
     echo "  php84                                       Access PHP 8.4 container shell"
-    echo "  mysql                                       Access MySQL shell"
+    echo "  mysql57                                     Access MySQL 5.7 shell"
+    echo "  mysql84                                     Access MySQL 8.4 shell"
     echo "  info                                        Show service URLs and information"
     echo "  help                                        Show this help message"
     echo ""
@@ -306,9 +307,14 @@ access_php84() {
     docker exec -it ${PHP84_CONTAINER_NAME} bash
 }
 
-access_mysql() {
-    echo -e "${BLUE}Accessing MySQL shell...${NC}"
+access_mysql57() {
+    echo -e "${BLUE}Accessing MySQL 5.7 shell...${NC}"
     docker exec -it ${MYSQL57_CONTAINER_NAME} mysql -u${MYSQL_57_USER} -p${MYSQL_57_PASSWORD} ${MYSQL_57_DATABASE}
+}
+
+access_mysql84() {
+    echo -e "${BLUE}Accessing MySQL 8.4 shell...${NC}"
+    docker exec -it ${MYSQL84_CONTAINER_NAME} mysql -u${MYSQL_84_USER} -p${MYSQL_84_PASSWORD} ${MYSQL_84_DATABASE}
 }
 
 access_postgres() {
@@ -322,12 +328,14 @@ show_info() {
     echo -e "${BLUE}PHP 7.4 Web:${NC}         http://localhost:${PHP_74_PORT}"
     echo -e "${BLUE}PHP 8.2 Web:${NC}         http://localhost:${PHP_82_PORT}"
     echo -e "${BLUE}PHP 8.4 Web:${NC}         http://localhost:${PHP_84_PORT}"
-    echo -e "${BLUE}phpMyAdmin:${NC}          http://localhost:${PHPMYADMIN_PORT}"
+    echo -e "${BLUE}phpMyAdmin (5.7):${NC}    http://localhost:${PHPMYADMIN_PORT}"
+    echo -e "${BLUE}phpMyAdmin (8.4):${NC}    http://localhost:${PHPMYADMIN8_PORT}"
     echo -e "${BLUE}pgAdmin:${NC}             http://localhost:${PGADMIN_PORT}"
-    echo -e "${BLUE}MySQL Host:${NC}          localhost:${MYSQL_57_PORT}"
+    echo -e "${BLUE}MySQL 5.7 Host:${NC}      localhost:${MYSQL_57_PORT}"
+    echo -e "${BLUE}MySQL 8.4 Host:${NC}      localhost:${MYSQL_84_PORT}"
     echo -e "${BLUE}PostgreSQL Host:${NC}     localhost:${POSTGRES_PORT}"
-    echo -e "${BLUE}MySQL User:${NC}          ${MYSQL_57_USER}"
-    echo -e "${BLUE}MySQL Database:${NC}      ${MYSQL_57_DATABASE}"
+    echo -e "${BLUE}MySQL 5.7 User:${NC}      ${MYSQL_57_USER} / db: ${MYSQL_57_DATABASE}"
+    echo -e "${BLUE}MySQL 8.4 User:${NC}      ${MYSQL_84_USER} / db: ${MYSQL_84_DATABASE}"
 
     # Show mounted projects information
     local projects_file="$SCRIPT_DIR/.devstack_projects"
@@ -798,8 +806,11 @@ case ${1:-help} in
     php84)
         access_php84
         ;;
-    mysql)
-        access_mysql
+    mysql57)
+        access_mysql57
+        ;;
+    mysql84)
+        access_mysql84
         ;;
     postgres)
         access_postgres

@@ -1,6 +1,6 @@
 # DevStack - Development Environment
 
-A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreSQL 16 and administration tools using Docker Compose.
+A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, MySQL 8.4, PostgreSQL 16 and administration tools using Docker Compose.
 
 ## Features
 
@@ -8,8 +8,10 @@ A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreS
 - **PHP 8.2** with Apache, Xdebug 3.3.2, Redis, ImageMagick
 - **PHP 8.4** with Apache, Xdebug, Redis, ImageMagick
 - **MySQL 5.7.44** with data persistence
+- **MySQL 8.4.9** with data persistence
 - **PostgreSQL 16** with data persistence
-- **phpMyAdmin** for MySQL administration
+- **phpMyAdmin** for MySQL 5.7 administration
+- **phpMyAdmin 8** for MySQL 8.4 administration
 - **pgAdmin 4** for PostgreSQL administration
 - **Laravel support** — subdirectory Alias mode and dedicated-port VirtualHost mode
 - **OpCache** tuned for instant change detection in development
@@ -22,17 +24,19 @@ A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, PostgreS
 
 ## Quick Start
 
-```bash
+```bashdev
 cd devstack
 cp .env.example .env
 ./devstack.sh start
 ```
 
 Services:
+
 - PHP 7.4: http://localhost:8074
 - PHP 8.2: http://localhost:8082
 - PHP 8.4: http://localhost:8084
-- phpMyAdmin: http://localhost:8080
+- phpMyAdmin (MySQL 5.7): http://localhost:8080
+- phpMyAdmin (MySQL 8.4): http://localhost:8088
 - pgAdmin: http://localhost:5050
 
 **Global alias (recommended):**
@@ -58,7 +62,8 @@ devstack clean                           # Remove all containers and volumes (DE
 devstack php74                           # Shell into PHP 7.4 container
 devstack php82                           # Shell into PHP 8.2 container
 devstack php84                           # Shell into PHP 8.4 container
-devstack mysql                           # MySQL CLI
+devstack mysql57                         # MySQL 5.7 CLI
+devstack mysql84                         # MySQL 8.4 CLI
 devstack postgres                        # PostgreSQL CLI
 
 devstack mount <path> <php> [name]               # Mount a project
@@ -96,6 +101,7 @@ devstack mount ~/Projects/my-laravel php82 myapp laravel
 ```
 
 In the project's `.env`:
+
 ```
 APP_URL=http://localhost:8082/myapp
 ```
@@ -112,6 +118,7 @@ devstack mount ~/Projects/laravel-spa php74 myapp laravel 8076
 ```
 
 In the project's `.env`:
+
 ```
 APP_URL=http://localhost:8076
 DB_HOST=mysql57
@@ -122,19 +129,24 @@ Apache generates a full `VirtualHost` on port 8076 with `DocumentRoot` pointing 
 
 **When to use each mode:**
 
-| App type | Mode |
-|---|---|
-| Traditional server-rendered Laravel | Subdirectory |
-| Laravel with Vue/React + Inertia.js | Dedicated port |
+| App type                                        | Mode           |
+| ----------------------------------------------- | -------------- |
+| Traditional server-rendered Laravel             | Subdirectory   |
+| Laravel with Vue/React + Inertia.js             | Dedicated port |
 | Laravel API (Axios/fetch with `/api/...` paths) | Dedicated port |
-| Laravel with Ziggy route generation | Dedicated port |
+| Laravel with Ziggy route generation             | Dedicated port |
 
 ### MySQL from inside the container
 
 When connecting to devstack's MySQL from a Laravel project's `.env`, use the service name, not `localhost`:
 
 ```
+# MySQL 5.7
 DB_HOST=mysql57
+DB_PORT=3306
+
+# MySQL 8.4
+DB_HOST=mysql84
 DB_PORT=3306
 ```
 
@@ -157,24 +169,30 @@ PHP 8.2 Projects:
 
 ### Environment variables (`.env`)
 
-| Variable | Description | Default |
-|---|---|---|
-| `PHP_74_PORT` | PHP 7.4 port | `8074` |
-| `PHP_82_PORT` | PHP 8.2 port | `8082` |
-| `PHP_84_PORT` | PHP 8.4 port | `8084` |
-| `MYSQL_57_PORT` | MySQL port | `3306` |
-| `POSTGRES_PORT` | PostgreSQL port | `5432` |
-| `PHPMYADMIN_PORT` | phpMyAdmin port | `8080` |
-| `PGADMIN_PORT` | pgAdmin port | `5050` |
-| `MYSQL_57_ROOT_PASSWORD` | MySQL root password | `root` |
-| `MYSQL_57_DATABASE` | MySQL default database | `devstack` |
-| `MYSQL_57_USER` | MySQL user | `devstack` |
-| `MYSQL_57_PASSWORD` | MySQL user password | `root` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` |
-| `POSTGRES_USER` | PostgreSQL user | `postgres` |
-| `POSTGRES_DB` | PostgreSQL database | `devstack` |
-| `PGADMIN_DEFAULT_EMAIL` | pgAdmin login | `admin@admin.com` |
-| `PGADMIN_DEFAULT_PASSWORD` | pgAdmin password | `admin` |
+| Variable                   | Description                | Default           |
+| -------------------------- | -------------------------- | ----------------- |
+| `PHP_74_PORT`              | PHP 7.4 port               | `8074`            |
+| `PHP_82_PORT`              | PHP 8.2 port               | `8082`            |
+| `PHP_84_PORT`              | PHP 8.4 port               | `8084`            |
+| `MYSQL_57_PORT`            | MySQL 5.7 port             | `3306`            |
+| `MYSQL_84_PORT`            | MySQL 8.4 port             | `3308`            |
+| `POSTGRES_PORT`            | PostgreSQL port            | `5432`            |
+| `PHPMYADMIN_PORT`          | phpMyAdmin (5.7) port      | `8080`            |
+| `PHPMYADMIN8_PORT`         | phpMyAdmin (8.4) port      | `8088`            |
+| `PGADMIN_PORT`             | pgAdmin port               | `5050`            |
+| `MYSQL_57_ROOT_PASSWORD`   | MySQL 5.7 root password    | `root`            |
+| `MYSQL_57_DATABASE`        | MySQL 5.7 default database | `devstack`        |
+| `MYSQL_57_USER`            | MySQL 5.7 user             | `devstack`        |
+| `MYSQL_57_PASSWORD`        | MySQL 5.7 user password    | `root`            |
+| `MYSQL_84_ROOT_PASSWORD`   | MySQL 8.4 root password    | `root`            |
+| `MYSQL_84_DATABASE`        | MySQL 8.4 default database | `devstack`        |
+| `MYSQL_84_USER`            | MySQL 8.4 user             | `devstack`        |
+| `MYSQL_84_PASSWORD`        | MySQL 8.4 user password    | `root`            |
+| `POSTGRES_PASSWORD`        | PostgreSQL password        | `postgres`        |
+| `POSTGRES_USER`            | PostgreSQL user            | `postgres`        |
+| `POSTGRES_DB`              | PostgreSQL database        | `devstack`        |
+| `PGADMIN_DEFAULT_EMAIL`    | pgAdmin login              | `admin@admin.com` |
+| `PGADMIN_DEFAULT_PASSWORD` | pgAdmin password           | `admin`           |
 
 ### Rebuilding after config changes
 
@@ -217,27 +235,37 @@ The trigger is `XDEBUG_SESSION=VSCODE` in the query string or via a browser exte
 **Laravel app double-prefix URLs or broken API calls:** The app needs dedicated port mode (see [Mode 2](#mode-2-dedicated-port-spa--inertiajs--api-apps) above). Common sign: frontend calls `/api/...` without a subdirectory prefix.
 
 **MySQL connection from Laravel container fails:**
+
 ```
+# MySQL 5.7
 DB_HOST=mysql57   # service name, not localhost or 127.0.0.1
 DB_PORT=3306      # internal port, not the host-mapped port
+
+# MySQL 8.4
+DB_HOST=mysql84
+DB_PORT=3308
 ```
 
 **OpCache serving stale files:**
+
 ```bash
 devstack clearcache
 # Then hard-refresh browser: Cmd+Shift+R / Ctrl+F5
 ```
 
 **Clean slate:**
+
 ```bash
 devstack clean   # removes containers and volumes (databases deleted)
 devstack build
 ```
 
 **View logs for a specific service:**
+
 ```bash
 docker-compose logs -f php74
 docker-compose logs -f mysql57
+docker-compose logs -f mysql84
 ```
 
 ## Internal Project Structure
@@ -253,10 +281,12 @@ devstack/
 │   ├── php74/               # PHP 7.4 build context (Dockerfile, php.ini)
 │   ├── php82/               # PHP 8.2 build context
 │   └── php84/               # PHP 8.4 build context
-├── mysql/5.7.44/            # MySQL persistent data
+├── mysql/5.7.44/            # MySQL 5.7 persistent data
+├── mysql/8.4.9/             # MySQL 8.4 persistent data
 └── postgres/16/             # PostgreSQL persistent data
 ```
 
 `.devstack_projects` format: `php-version:name:source-path:type:port`
+
 - `type`: `laravel` or empty
 - `port`: dedicated port number (laravel mode 2) or empty (mode 1 or non-Laravel)

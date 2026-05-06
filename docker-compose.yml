@@ -16,7 +16,28 @@ services:
     networks:
       - network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+
+  mysql84:
+    container_name: ${MYSQL84_CONTAINER_NAME}
+    image: mysql:8.4.9
+    restart: unless-stopped
+    command: --mysql-native-password=ON
+    volumes:
+      - ./mysql/8.4.9:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_84_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_84_DATABASE}
+      MYSQL_USER: ${MYSQL_84_USER}
+      MYSQL_PASSWORD: ${MYSQL_84_PASSWORD}
+    ports:
+      - "${MYSQL_84_PORT}:3306"
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
 
@@ -35,7 +56,7 @@ services:
     networks:
       - network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,6 +79,27 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_57_ROOT_PASSWORD}
     volumes:
       - ./mysql/phpmyadmin:/sessions
+    networks:
+      - network
+
+  phpmyadmin8:
+    container_name: ${PHPMYADMIN8_CONTAINER_NAME}
+    platform: linux/x86_64
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql84:
+        condition: service_healthy
+    ports:
+      - "${PHPMYADMIN8_PORT}:80"
+    environment:
+      PMA_HOST: mysql84
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_84_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_84_ROOT_PASSWORD}
+    volumes:
+      - ./mysql/phpmyadmin8:/sessions
     networks:
       - network
 
@@ -153,5 +195,7 @@ networks:
 volumes:
   mysql:
     name: ${MYSQL57_CONTAINER_NAME}_data
+  mysql84:
+    name: ${MYSQL84_CONTAINER_NAME}_data
   postgres:
     name: ${POSTGRES_CONTAINER_NAME}_data
