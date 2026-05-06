@@ -242,8 +242,8 @@ DB_HOST=mysql57   # service name, not localhost or 127.0.0.1
 DB_PORT=3306      # internal port, not the host-mapped port
 
 # MySQL 8.4
-DB_HOST=mysql84
-DB_PORT=3308
+DB_HOST=mysql84   # service name, not localhost or 127.0.0.1
+DB_PORT=3306      # internal port, not the host-mapped port
 ```
 
 **OpCache serving stale files:**
