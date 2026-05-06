@@ -166,6 +166,11 @@ build_services() {
     cd "$SCRIPT_DIR" && docker-compose build --no-cache
     cd "$SCRIPT_DIR" && docker-compose up -d
     echo -e "${GREEN}Services built and started successfully!${NC}"
+
+    if detect_and_remount_projects; then
+        echo -e "${GREEN}Projects restored after build!${NC}"
+    fi
+
     show_info
 }
 
