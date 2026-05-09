@@ -19,6 +19,9 @@ RUN apt-get update && apt-get upgrade -y && \
         unzip \
         openssl \
         iputils-ping \
+        nodejs \
+        npm \
+        chromium \
         # Library dependencies
         libsqlite3-dev \
         libsqlite3-0 \
