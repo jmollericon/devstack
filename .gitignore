@@ -10,6 +10,9 @@ mysql/
 # PostgreSQL data directory
 postgres/
 
+# Redis data directory
+redis/
+
 # Docker volumes and data
 volumes/
 data/

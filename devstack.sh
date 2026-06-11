@@ -50,6 +50,8 @@ print_help() {
     echo "  php84                                       Access PHP 8.4 container shell"
     echo "  mysql57                                     Access MySQL 5.7 shell"
     echo "  mysql84                                     Access MySQL 8.4 shell"
+    echo "  postgres                                    Access PostgreSQL shell"
+    echo "  redis                                       Access Redis CLI"
     echo "  info                                        Show service URLs and information"
     echo "  help                                        Show this help message"
     echo ""
@@ -327,6 +329,11 @@ access_postgres() {
     docker exec -it ${POSTGRES_CONTAINER_NAME} psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 }
 
+access_redis() {
+    echo -e "${BLUE}Accessing Redis CLI...${NC}"
+    docker exec -it ${REDIS_CONTAINER_NAME} redis-cli -a ${REDIS_PASSWORD} --no-auth-warning
+}
+
 show_info() {
     echo ""
     echo -e "${GREEN}=== DevStack Information ===${NC}"
@@ -339,6 +346,7 @@ show_info() {
     echo -e "${BLUE}MySQL 5.7 Host:${NC}      localhost:${MYSQL_57_PORT}"
     echo -e "${BLUE}MySQL 8.4 Host:${NC}      localhost:${MYSQL_84_PORT}"
     echo -e "${BLUE}PostgreSQL Host:${NC}     localhost:${POSTGRES_PORT}"
+    echo -e "${BLUE}Redis Host:${NC}          localhost:${REDIS_PORT}"
     echo -e "${BLUE}MySQL 5.7 User:${NC}      ${MYSQL_57_USER} / db: ${MYSQL_57_DATABASE}"
     echo -e "${BLUE}MySQL 8.4 User:${NC}      ${MYSQL_84_USER} / db: ${MYSQL_84_DATABASE}"
 
@@ -819,6 +827,9 @@ case ${1:-help} in
         ;;
     postgres)
         access_postgres
+        ;;
+    redis)
+        access_redis
         ;;
     info)
         show_info

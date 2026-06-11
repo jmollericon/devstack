@@ -1,6 +1,6 @@
 # DevStack - Development Environment
 
-A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, MySQL 8.4, PostgreSQL 16 and administration tools using Docker Compose.
+A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, MySQL 8.4, PostgreSQL 16, Redis 7 and administration tools using Docker Compose.
 
 ## Features
 
@@ -10,6 +10,7 @@ A complete development stack with PHP 7.4, PHP 8.2, PHP 8.4, MySQL 5.7, MySQL 8.
 - **MySQL 5.7.44** with data persistence
 - **MySQL 8.4.9** with data persistence
 - **PostgreSQL 16** with data persistence
+- **Redis 7** with password auth and data persistence
 - **phpMyAdmin** for MySQL 5.7 administration
 - **phpMyAdmin 8** for MySQL 8.4 administration
 - **pgAdmin 4** for PostgreSQL administration
@@ -65,6 +66,7 @@ devstack php84                           # Shell into PHP 8.4 container
 devstack mysql57                         # MySQL 5.7 CLI
 devstack mysql84                         # MySQL 8.4 CLI
 devstack postgres                        # PostgreSQL CLI
+devstack redis                           # Redis CLI
 
 devstack mount <path> <php> [name]               # Mount a project
 devstack mount <path> <php> <name> laravel       # Mount Laravel (subdirectory mode)
@@ -150,6 +152,16 @@ DB_HOST=mysql84
 DB_PORT=3306
 ```
 
+### Redis from inside the container
+
+```
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=redis
+```
+
+The `redis` PHP extension is pre-installed in all PHP containers.
+
 ### `devstack info` output with Laravel projects
 
 ```
@@ -177,6 +189,7 @@ PHP 8.2 Projects:
 | `MYSQL_57_PORT`            | MySQL 5.7 port             | `3306`            |
 | `MYSQL_84_PORT`            | MySQL 8.4 port             | `3308`            |
 | `POSTGRES_PORT`            | PostgreSQL port            | `5432`            |
+| `REDIS_PORT`               | Redis port                 | `6379`            |
 | `PHPMYADMIN_PORT`          | phpMyAdmin (5.7) port      | `8080`            |
 | `PHPMYADMIN8_PORT`         | phpMyAdmin (8.4) port      | `8088`            |
 | `PGADMIN_PORT`             | pgAdmin port               | `5050`            |
@@ -193,6 +206,7 @@ PHP 8.2 Projects:
 | `POSTGRES_DB`              | PostgreSQL database        | `devstack`        |
 | `PGADMIN_DEFAULT_EMAIL`    | pgAdmin login              | `admin@admin.com` |
 | `PGADMIN_DEFAULT_PASSWORD` | pgAdmin password           | `admin`           |
+| `REDIS_PASSWORD`           | Redis password             | `redis`           |
 
 ### Rebuilding after config changes
 
@@ -283,7 +297,8 @@ devstack/
 │   └── php84/               # PHP 8.4 build context
 ├── mysql/5.7.44/            # MySQL 5.7 persistent data
 ├── mysql/8.4.9/             # MySQL 8.4 persistent data
-└── postgres/16/             # PostgreSQL persistent data
+├── postgres/16/             # PostgreSQL persistent data
+└── redis/                   # Redis persistent data
 ```
 
 `.devstack_projects` format: `php-version:name:source-path:type:port`
