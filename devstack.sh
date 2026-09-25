@@ -259,6 +259,10 @@ apply_laravel_apache_configs() {
 
         RewriteEngine On
 
+        RewriteCond %{HTTP:Authorization} .
+        RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+        RewriteCond %{REQUEST_METHOD} !=OPTIONS
         RewriteCond %{REQUEST_FILENAME} !-d
         RewriteCond %{REQUEST_URI} (.+)/\$
         RewriteRule ^ %1 [L,R=301]
@@ -279,6 +283,10 @@ apply_laravel_apache_configs() {
 
     RewriteEngine On
 
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    RewriteCond %{REQUEST_METHOD} !=OPTIONS
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/\$
     RewriteRule ^ %1 [L,R=301]
