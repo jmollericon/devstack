@@ -4,6 +4,11 @@ FROM php:7.4-apache
 ENV DEBIAN_FRONTEND=noninteractive
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
+# Debian bullseye (php:7.4-apache base) is EOL and moved to archive.debian.org.
+# bullseye-security is dropped: its live index still lists packages whose files are gone (404).
+RUN printf 'deb http://archive.debian.org/debian bullseye main\ndeb http://archive.debian.org/debian bullseye-updates main\n' > /etc/apt/sources.list \
+    && rm -f /etc/apt/sources.list.d/*.list
+
 # Install system dependencies and PHP extensions in a single layer
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
